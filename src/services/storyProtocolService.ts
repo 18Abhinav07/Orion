@@ -62,7 +62,7 @@ export class StoryProtocolService {
     console.log('Expiry:', params.expiryTimestamp);
     console.log('Signature:', params.signature);
     
-    // Call the contract
+    // Call the contract with explicit gas limit
     const tx = await this.contractInstance.verifyAndMint(
       params.to,
       params.contentHash,
@@ -70,7 +70,10 @@ export class StoryProtocolService {
       params.nftMetadataURI,
       params.nonce,
       params.expiryTimestamp,
-      params.signature
+      params.signature,
+      {
+        gasLimit: 5000000  // 5M gas - way more than needed
+      }
     );
     
     console.log('📝 Transaction sent:', tx.hash);

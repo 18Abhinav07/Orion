@@ -49,10 +49,15 @@ router.post('/generate-mint-token', async (req, res) => {
     // Calculate expiry
     const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_EXPIRY_SECONDS;
     
+    // Hash the URIs first (to match Solidity contract)
+    const ipMetadataHash = ethers.keccak256(ethers.toUtf8Bytes(ipMetadataURI));
+    const nftMetadataHash = ethers.keccak256(ethers.toUtf8Bytes(nftMetadataURI));
+    
     // Create message hash (MUST match Solidity keccak256)
+    // Contract does: keccak256(abi.encodePacked(recipient, contentHash, keccak256(ipURI), keccak256(nftURI), nonce, expiry))
     const messageHash = ethers.solidityPackedKeccak256(
-      ['address', 'bytes32', 'string', 'string', 'uint256', 'uint256'],
-      [creatorAddress, contentHash, ipMetadataURI, nftMetadataURI, nonce, expiresAt]
+      ['address', 'bytes32', 'bytes32', 'bytes32', 'uint256', 'uint256'],
+      [creatorAddress, contentHash, ipMetadataHash, nftMetadataHash, nonce, expiresAt]
     );
     
     // Sign the hash directly (NOT as a message - no Ethereum prefix)
@@ -60,6 +65,10 @@ router.post('/generate-mint-token', async (req, res) => {
     const signature = await verifierWallet.signMessage(messageHashBytes);
     
     console.log('🔐 Signature created:');
+    console.log('  IP URI:', ipMetadataURI);
+    console.log('  IP URI Hash:', ipMetadataHash);
+    console.log('  NFT URI:', nftMetadataURI);
+    console.log('  NFT URI Hash:', nftMetadataHash);
     console.log('  Message hash:', messageHash);
     console.log('  Signature:', signature);
     console.log('  Signer address:', verifierWallet.address);
