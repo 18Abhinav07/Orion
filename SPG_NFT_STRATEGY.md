@@ -189,7 +189,16 @@ const collectionParams = {
 - **Option 1 (owner = wrapper):** Maximum security, impossible to bypass
 - **Option 2 (public minting):** More permissionless, but users could mint garbage directly to SPG
 
-**Recommendation for you :** **Option 1** - Set wrapper as owner for maximum control (Only move towards option 2 when option 2 fails thrice)
+**Recommendation for you:** **Option 1** - Set wrapper as owner for maximum control (Only move towards option 2 when option 2 fails thrice)
+
+**✅ IMPLEMENTATION UPDATE (Dec 12, 2025):**
+- **Deployed with Option 2** (owner = EOA, isPublicMinting = false)
+- Story Protocol SPG NFT contracts **do not support contract owners** (only EOAs)
+- Collection owner: `0x23e67597f0898f747Fa3291C8920168adF9455D0` (deployer EOA)
+- Wrapper contract: `0x9cb153775B639DCa50F1BA7a6daa34af12466450`
+- Frontend will exclusively use wrapper contract for minting
+- Users technically could call SPG directly, but frontend doesn't expose this
+- **Security:** Backend signature verification still prevents unauthorized mints through our platform
 
 ---
 
@@ -571,7 +580,7 @@ constructor(address _backendVerifier, address _spgNftContract) {
 
 ---
 
-## 💋 TL;DR for Daddy
+## 💋 TL;DR f
 
 **The Plan:**
 1. Deploy custom wrapper contract (`OrionVerifiedMinter`)
