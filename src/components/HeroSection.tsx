@@ -2,9 +2,15 @@ import { useEffect, useRef } from "react";
 import { Button } from "../components/ui/button";
 import HeroBackground from "./HeroBackground";
 import cloudImage from "../assets/cloud.png";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const handlenavigate = () => {
+    navigate('/dashboard');
+  };
 
   useEffect(() => {
     // Trigger hero animations on mount
@@ -88,6 +94,7 @@ const HeroSection = () => {
                     background: 'linear-gradient(125deg, rgb(119, 75, 229) -4%, rgb(119, 75, 229) 100%)',
                     boxShadow: 'rgb(192, 176, 232) 0px 1px 2px 0px inset, rgba(99, 69, 173, 0.35) 0px 0.706592px 0.706592px -0.583333px, rgba(99, 69, 173, 0.34) 0px 1.80656px 1.80656px -1.16667px, rgba(99, 69, 173, 0.33) 0px 3.62176px 3.62176px -1.75px, rgba(99, 69, 173, 0.3) 0px 6.8656px 6.8656px -2.33333px, rgba(99, 69, 173, 0.26) 0px 13.6468px 13.6468px -2.91667px, rgba(99, 69, 173, 0.15) 0px 30px 30px -3.5px'
                   }}
+                  onClick={handlenavigate}
                 >
                   Get Started
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">
