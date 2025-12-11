@@ -125,94 +125,114 @@ const NewIssuerDashboard: React.FC = () => {
   const [similarityScore, setSimilarityScore] = useState(0);
   const [currentContentHash, setCurrentContentHash] = useState('');
 
-  // Initialize service and check authorization
+  // ❌ OLD: Initialize Flow blockchain services (COMMENTED OUT)
+  // useEffect(() => {
+  //   const initializeService = async () => {
+  //     if (!isConnected || !address || !signer) {
+  //       setIsAuthorizedIssuer(null);
+  //       setIsServiceInitialized(false);
+  //       return;
+  //     }
+  //     setAuthCheckLoading(true);
+  //     console.log('🔄 Initializing TokenManagement service...');
+  //     try {
+  //       const service = new TokenManagementService();
+  //       await service.initialize(signer.provider, { ... });
+  //       // ... (Flow service initialization code)
+  //     } catch (error) {
+  //       console.error('❌ Failed to initialize TokenManagement service:', error);
+  //     }
+  //   };
+  //   initializeService();
+  // }, [isConnected, address, signer]);
+
+  // ✅ NEW: Initialize Story Protocol SDK
   useEffect(() => {
-    const initializeService = async () => {
+    const initializeStoryProtocol = async () => {
       if (!isConnected || !address || !signer) {
-        setIsAuthorizedIssuer(null);
-        setIsServiceInitialized(false);
+        setIsAuthorizedCreator(null);
+        setIsStorySDKInitialized(false);
         return;
       }
 
+      setIsInitializing(true);
       setAuthCheckLoading(true);
-      console.log('🔄 Initializing TokenManagement service...');
-      
+      console.log('🔄 Initializing Story Protocol SDK...');
+
       try {
-        const service = new TokenManagementService();
-        await service.initialize(signer.provider, {
-          TOKEN_MANAGEMENT: TOKEN_MANAGEMENT_CONTRACT,
-          ADMIN: ADMIN_CONTRACT,
-          ERC1155_CORE: TOKEN_CONTRACT,
-          MARKETPLACE: MARKETPLACE_CONTRACT
-        });
-        
-        setTokenManagementService(service);
-        
-        // Initialize Direct Marketplace Listing Service
-        const directListing = new DirectMarketplaceListingService();
-        await directListing.initialize(signer.provider, {
-          MARKETPLACE: MARKETPLACE_CONTRACT,
-          TOKEN: TOKEN_CONTRACT,
-          TOKEN_MANAGEMENT: TOKEN_MANAGEMENT_CONTRACT
-        });
-        
-        setDirectListingService(directListing);
-        
-        // Simple direct authorization check (same as working approach)
-        console.log('🔄 Checking authorization directly...');
-        const ADMIN_ABI = ["function isIssuer(address _address) external view returns (bool)"];
-        const adminContract = new ethers.Contract(ADMIN_CONTRACT, ADMIN_ABI, signer.provider);
-        
-        console.log('Admin contract:', ADMIN_CONTRACT);
-        console.log('Checking address:', address);
-        
-        const isAuthorized = await adminContract.isIssuer(address);
-        console.log('✅ Direct authorization result:', isAuthorized);
-        
-        setIsServiceInitialized(true);
-        setIsAuthorizedIssuer(isAuthorized);
-        
+        // Initialize Story Protocol SDK with user's wallet
+        await storyProtocolService.initialize(address, signer);
+
+        setIsStorySDKInitialized(true);
+
+        // For MVP: Auto-approve all connected users as creators
+        // Later: Can add backend API check or on-chain registry
+        const isAuthorized = true; // For now, all users can be creators
+        setIsAuthorizedCreator(isAuthorized);
+
         if (isAuthorized) {
-          console.log('✅ User is authorized issuer');
-          toast.success('Welcome, authorized issuer!');
-          await loadTokenRequests(service);
-        } else {
-          console.log('❌ User is not authorized as issuer');
-          toast.error('Your wallet is not authorized as an issuer');
+          console.log('✅ Story Protocol SDK initialized successfully');
+          toast.success('Welcome, Creator! Ready to register IP assets.');
+
+          // Load user's registered IP assets from backend cache
+          await loadIPRegistrations();
         }
-        
-      } catch (error) {
-        console.error('❌ Failed to initialize TokenManagement service:', error);
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          legacyIssuerService: !!legacyIssuerService
-        });
-        toast.error(`Failed to initialize issuer service: ${error.message}`);
-        setIsAuthorizedIssuer(false);
+
+      } catch (error: any) {
+        console.error('❌ Failed to initialize Story Protocol SDK:', error);
+        toast.error(`Failed to connect to Story Protocol: ${error.message}`);
+        setIsAuthorizedCreator(false);
+        setIsStorySDKInitialized(false);
       } finally {
+        setIsInitializing(false);
         setAuthCheckLoading(false);
       }
     };
 
-    initializeService();
+    initializeStoryProtocol();
   }, [isConnected, address, signer]);
 
-  // Load token requests
-  const loadTokenRequests = async (service?: TokenManagementService) => {
-    const serviceToUse = service || tokenManagementService;
-    if (!serviceToUse) return;
-    
-    setLoadingRequests(true);
+  // ❌ OLD: Load token requests from Flow blockchain (COMMENTED OUT)
+  // const loadTokenRequests = async (service?: TokenManagementService) => {
+  //   const serviceToUse = service || tokenManagementService;
+  //   if (!serviceToUse) return;
+  //   setLoadingRequests(true);
+  //   try {
+  //     const requests = await serviceToUse.getMyRequests();
+  //     setTokenRequests(requests);
+  //     console.log('📋 Loaded token requests:', requests);
+  //   } catch (error) {
+  //     console.error('❌ Failed to load token requests:', error);
+  //     toast.error('Failed to load your token requests');
+  //   } finally {
+  //     setLoadingRequests(false);
+  //   }
+  // };
+
+  // ✅ NEW: Load IP registrations from backend cache
+  const loadIPRegistrations = async () => {
+    if (!address) return;
+
+    setLoadingRegistrations(true);
     try {
-      const requests = await serviceToUse.getMyRequests();
-      setTokenRequests(requests);
-      console.log('📋 Loaded token requests:', requests);
-    } catch (error) {
-      console.error('❌ Failed to load token requests:', error);
-      toast.error('Failed to load your token requests');
+      // Call backend API to get cached IP registrations
+      const response = await fetch(`/api/assets?walletAddress=${address}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch IP registrations');
+      }
+
+      const data = await response.json();
+      setIpRegistrations(data);
+      console.log('📋 Loaded IP registrations:', data);
+    } catch (error: any) {
+      console.error('❌ Failed to load IP registrations:', error);
+      // Don't show error toast if backend not ready (for development)
+      if (error.message !== 'Failed to fetch') {
+        toast.error('Failed to load your IP registrations');
+      }
     } finally {
-      setLoadingRequests(false);
+      setLoadingRegistrations(false);
     }
   };
 
