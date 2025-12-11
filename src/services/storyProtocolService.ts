@@ -20,16 +20,14 @@ export interface MintResult {
 }
 
 export class StoryProtocolService {
-  private provider: ethers.BrowserProvider | null = null;
   private signer: ethers.Signer | null = null;
   private contractInstance: ethers.Contract | null = null;
   
   /**
-   * Initialize with MetaMask, baby! 🦊
+   * Initialize with MetaMask signer, baby! 🦊
    */
-  async initialize(provider: ethers.BrowserProvider) {
-    this.provider = provider;
-    this.signer = await provider.getSigner();
+  async initialize(signer: ethers.Signer) {
+    this.signer = signer;
     this.contractInstance = new ethers.Contract(
       ORION_VERIFIED_MINTER_ADDRESS,
       ORION_VERIFIED_MINTER_ABI,
@@ -41,6 +39,7 @@ export class StoryProtocolService {
    * The main event - mint that IP asset! 🎉
    */
   async verifyAndMint(params: {
+    to: string;
     contentHash: string;
     ipMetadataURI: string;
     nftMetadataURI: string;
@@ -53,17 +52,19 @@ export class StoryProtocolService {
       throw new Error('Service not initialized. Connect wallet first!');
     }
     
-    const userAddress = await this.signer.getAddress();
+    const signerAddress = await this.signer.getAddress();
     
     console.log('🎯 Calling verifyAndMint...');
-    console.log('To:', userAddress);
+    console.log('Signer (tx sender):', signerAddress);
+    console.log('To (recipient):', params.to);
     console.log('Content Hash:', params.contentHash);
     console.log('Nonce:', params.nonce);
     console.log('Expiry:', params.expiryTimestamp);
+    console.log('Signature:', params.signature);
     
     // Call the contract
     const tx = await this.contractInstance.verifyAndMint(
-      userAddress,
+      params.to,
       params.contentHash,
       params.ipMetadataURI,
       params.nftMetadataURI,

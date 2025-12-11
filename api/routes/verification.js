@@ -55,8 +55,14 @@ router.post('/generate-mint-token', async (req, res) => {
       [creatorAddress, contentHash, ipMetadataURI, nftMetadataURI, nonce, expiresAt]
     );
     
-    // Sign with backend verifier private key
-    const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
+    // Sign the hash directly (NOT as a message - no Ethereum prefix)
+    const messageHashBytes = ethers.getBytes(messageHash);
+    const signature = await verifierWallet.signMessage(messageHashBytes);
+    
+    console.log('🔐 Signature created:');
+    console.log('  Message hash:', messageHash);
+    console.log('  Signature:', signature);
+    console.log('  Signer address:', verifierWallet.address);
     
     // Store in database
     const mintToken = new MintToken({
