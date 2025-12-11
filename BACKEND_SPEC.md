@@ -1,619 +1,551 @@
-# 🖥️ BACKEND API SPECIFICATION
-## RWA Tokenization Platform - Authentication & Asset Management Service
+# Backend API Specification for Story Protocol Integration
 
-**Version:** 1.0 (Current Implementation)
-**Date:** December 11, 2025
-**Platform:** Real Estate & Invoice Tokenization on Flow Blockchain
-**Tech Stack:** Node.js + Express + MongoDB + JWT Authentication
+This document specifies the data flow between frontend and backend for Story Protocol IP registration.
 
----
+## Architecture Overview
 
-## 📋 OVERVIEW
+**Frontend Responsibility:**
+- Call Story Protocol SDK directly
+- Send results to backend for caching
+- Handle UI/UX and user interactions
 
-The backend serves as the authentication and asset management layer for the RWA tokenization platform. It provides:
-
-1. **User Authentication:** JWT-based authentication with role management
-2. **Multi-Role System:** Support for admin, issuer, manager, and user roles
-3. **Wallet Integration:** Link wallet addresses to user accounts
-4. **Asset Metadata Storage:** Store and manage tokenized asset metadata
-5. **Role-Based Access Control:** Enforce permissions for different user types
-
-**Architecture:**
-- **Frontend:** React + ethers.js for blockchain interaction
-- **Backend:** Node.js + Express for authentication and business logic
-- **Blockchain:** Flow Testnet (Chain ID: 747) for smart contracts
-- **Database:** MongoDB for user data and asset metadata
+**Backend Responsibility:**
+- Content fingerprinting (SHA256 hashing)
+- IPFS uploads (Pinata)
+- Similarity detection
+- Database caching
+- Admin review queue
 
 ---
 
-## 🔧 TECH STACK
+## 📌 API Endpoint 1: Content Fingerprinting + IPFS Upload
 
-### **Current Implementation**
-```json
+### `POST /api/fingerprint`
+
+**Purpose:** Fingerprint content, upload to IPFS, create metadata JSON, upload metadata to IPFS
+
+**Request Format:** `multipart/form-data`
+
+**Request Body:**
+```typescript
 {
-  "runtime": "Node.js 18+",
-  "framework": "Express.js 4.18+",
-  "database": "MongoDB 6+",
-  "authentication": "JWT (jsonwebtoken)",
-  "encryption": "bcryptjs for password hashing",
-  "validation": "express-validator",
-  "cors": "cors middleware",
-  "fileUpload": "multer (for IPFS uploads)",
-  "ipfs": "pinata-sdk",
-  "environment": "dotenv",
-  "blockchain": "ethers.js for Flow EVM interaction"
+  // File content
+  file: File,                    // The actual content file (text, image, video, audio)
+
+  // IP Asset metadata
+  title: string,                 // IP asset title
+  description: string,           // IP asset description (can be empty)
+  walletAddress: string,         // Creator's wallet address (0x...)
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio',
+  royaltyPercent: string,        // e.g., "10"
+
+  // Additional metadata attributes (JSON string)
+  attributes: string             // JSON.stringify([...])
 }
 ```
 
-### **Database Structure**
+**Example Request:**
 ```javascript
-// MongoDB Collections:
+const formData = new FormData();
+formData.append('file', registerForm.contentFiles[0]);
+formData.append('title', 'My Creative Work');
+formData.append('description', 'A beautiful piece of art');
+formData.append('walletAddress', '0x1234...');
+formData.append('ipType', 'Image');
+formData.append('royaltyPercent', '10');
+formData.append('attributes', JSON.stringify([
+  { trait_type: 'IP Type', value: 'Image' },
+  { trait_type: 'Royalty Rate', value: '10%' },
+  { trait_type: 'Creator', value: '0x1234...' },
+  { trait_type: 'Blockchain', value: 'Story Protocol' },
+  { trait_type: 'Network', value: 'Story Aeined Testnet' }
+]));
+```
+
+**Response Format:** `application/json`
+
+**Response Body:**
+```typescript
 {
-  "users": {
-    "schema": "User accounts with roles and wallet addresses",
-    "indexes": ["email", "walletAddress", "roles"]
-  },
-  "assets": {
-    "schema": "Tokenized asset metadata",
-    "indexes": ["tokenId", "issuer", "status"]
-  },
-  "transactions": {
-    "schema": "Transaction history tracking",
-    "indexes": ["txHash", "user", "timestamp"]
+  hash: string,              // SHA256 hash of content (0xabc...)
+  ipfsCid: string,          // IPFS CID of content file (Qm...)
+  ipMetadataURI: string,    // IPFS URI for IP metadata (ipfs://Qm...)
+  ipMetadataHash: string,   // Keccak256 hash of IP metadata (0xdef...)
+  nftMetadataURI: string,   // IPFS URI for NFT metadata (ipfs://Qm...)
+  nftMetadataHash: string   // Keccak256 hash of NFT metadata (0xghi...)
+}
+```
+
+**Example Response:**
+```json
+{
+  "hash": "0xabc123...",
+  "ipfsCid": "QmXyz789...",
+  "ipMetadataURI": "ipfs://QmMetadata123...",
+  "ipMetadataHash": "0xdef456...",
+  "nftMetadataURI": "ipfs://QmMetadata123...",
+  "nftMetadataHash": "0xdef456..."
+}
+```
+
+**Backend Implementation Steps:**
+1. Extract file from request
+2. Calculate SHA256 hash of file content
+3. Upload file to IPFS (Pinata) → get `ipfsCid`
+4. Create metadata JSON:
+   ```json
+   {
+     "name": "title from request",
+     "description": "description from request",
+     "image": "ipfs://ipfsCid",
+     "ipType": "ipType from request",
+     "contentHash": "hash",
+     "creator": "walletAddress from request",
+     "attributes": [parsed attributes array]
+   }
+   ```
+5. Upload metadata JSON to IPFS → get metadata CID
+6. Calculate Keccak256 hash of metadata JSON
+7. Return response
+
+---
+
+## 📌 API Endpoint 2: Similarity Check
+
+### `POST /api/check-similarity`
+
+**Purpose:** Check if content hash matches existing IPs (similarity detection)
+
+**Request Format:** `application/json`
+
+**Request Body:**
+```typescript
+{
+  contentHash: string  // SHA256 hash from fingerprinting (0xabc...)
+}
+```
+
+**Response Format:** `application/json`
+
+**Response Body:**
+```typescript
+{
+  score: number,                    // Similarity score 0-100
+  status: 'Clean' | 'Warning' | 'Review' | 'Derivative',
+  isMatch: boolean,                 // true if score >= 90%
+  parentIpId?: string,              // IP ID of matched parent (if isMatch)
+  parentMetadata?: {
+    ipId: string,
+    title: string,
+    creator: string,
+    ipType: string,
+    contentHash: string,
+    licenseTermsId: string,
+    royaltyRate: number
   }
 }
 ```
 
+**Backend Implementation:**
+1. Query database for existing IPs
+2. Compare `contentHash` with all existing hashes
+3. Calculate similarity score (0-100)
+4. If score >= 90%, return parent IP details
+5. Return status based on thresholds:
+   - < 40%: "Clean"
+   - 40-70%: "Warning"
+   - 70-90%: "Review"
+   - >= 90%: "Derivative"
+
 ---
 
-## 🗄️ DATABASE SCHEMA (MongoDB)
+## 📌 API Endpoint 3: Upload Derivative Metadata
 
-### **User Collection**
+### `POST /api/upload-derivative-metadata`
 
-```javascript
-// Collection: users
+**Purpose:** Upload derivative-specific metadata to IPFS (for similarity >= 90%)
+
+**Request Format:** `application/json`
+
+**Request Body:**
+```typescript
 {
-  _id: ObjectId,
-
-  // Basic Info
-  firstName: String (required),
-  lastName: String (required),
-  email: String (required, unique, indexed),
-  password: String (required, hashed with bcrypt),
-
-  // Blockchain Integration
-  walletAddress: String (required, unique, indexed),
-
-  // Role Management
-  roles: Array<String>, // ['admin', 'issuer', 'manager', 'user']
-  primaryRole: String, // Default role for the user
-
-  // KYC & Verification
-  isVerified: Boolean (default: false),
-  kycStatus: String (default: 'pending'), // pending, approved, rejected
-
-  // Contact Info
-  phone: String (optional),
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    country: String,
-    zipCode: String
-  },
-
-  // User Preferences
-  preferences: {
-    notifications: {
-      email: Boolean (default: true),
-      sms: Boolean (default: false),
-      push: Boolean (default: true)
-    },
-    currency: String (default: 'USD'),
-    language: String (default: 'en')
-  },
-
-  // Timestamps
-  createdAt: Date (default: Now),
-  updatedAt: Date (default: Now),
-  lastLogin: Date
-}
-```
-
-### **Asset Collection**
-
-```javascript
-// Collection: assets (Tokenized RWA metadata)
-{
-  _id: ObjectId,
-
-  // Blockchain Data
-  tokenId: String (indexed),
-  contractAddress: String,
-  chainId: Number (default: 747), // Flow Testnet
-
-  // Asset Information
-  name: String (required),
-  description: String,
-  assetType: String, // 'Invoice', 'RealEstate', 'Commodity', etc.
-
-  // IPFS Metadata
-  metadataURI: String, // IPFS URI (ipfs://...)
-  ipfsCid: String, // Pinata CID
-  imageURIs: Array<String>, // Asset images
-
-  // Ownership & Issuer
-  issuer: String (indexed), // Wallet address of issuer
-  owner: String (indexed), // Current owner address
-
-  // Token Economics
-  totalSupply: Number,
-  pricePerToken: String, // Wei format
-  availableAmount: Number,
-
-  // Status Tracking
-  status: String (indexed), // 'pending', 'approved', 'deployed', 'listed', 'settled'
-  approved: Boolean (default: false),
-  deployed: Boolean (default: false),
-  listedOnMarketplace: Boolean (default: false),
-
-  // Settlement (for invoices)
-  isSettled: Boolean (default: false),
-  settlementAmount: String,
-  settlementDate: Date,
-
-  // Asset Attributes (flexible metadata)
+  title: string,
+  description: string,
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio',
+  contentHash: string,             // SHA256 hash
+  walletAddress: string,           // Creator address
+  isDerivative: true,
+  parentIpId: string,              // Parent IP ID (0x...)
+  similarityScore: number,         // 90-100
   attributes: Array<{
-    trait_type: String,
-    value: String
-  }>,
-
-  // Timestamps
-  createdAt: Date (default: Now),
-  updatedAt: Date (default: Now),
-  approvedAt: Date,
-  deployedAt: Date,
-  listedAt: Date
+    trait_type: string,
+    value: string
+  }>
 }
 ```
 
-### **Transaction Collection**
+**Response Format:** `application/json`
 
-```javascript
-// Collection: transactions (Activity tracking)
+**Response Body:**
+```typescript
 {
-  _id: ObjectId,
-
-  // Transaction Details
-  txHash: String (indexed, unique),
-  blockNumber: Number,
-  chainId: Number (default: 747),
-
-  // Transaction Type
-  type: String, // 'register', 'approve', 'deploy', 'list', 'buy', 'sell', 'settle'
-
-  // Participants
-  from: String (indexed), // Sender wallet address
-  to: String (indexed), // Receiver wallet address
-
-  // Asset Reference
-  tokenId: String (indexed),
-  amount: Number,
-  price: String, // Wei format
-
-  // Status
-  status: String, // 'pending', 'confirmed', 'failed'
-
-  // Timestamps
-  timestamp: Date (default: Now),
-  confirmedAt: Date
+  ipMetadataURI: string,    // IPFS URI (ipfs://Qm...)
+  ipMetadataHash: string,   // Keccak256 hash (0x...)
+  nftMetadataURI: string,   // IPFS URI (ipfs://Qm...)
+  nftMetadataHash: string   // Keccak256 hash (0x...)
 }
 ```
 
-### **Indexes for Performance**
-```javascript
-// Users collection
-db.users.createIndex({ email: 1 }, { unique: true });
-db.users.createIndex({ walletAddress: 1 }, { unique: true });
-db.users.createIndex({ roles: 1 });
+**Backend Implementation:**
+1. Create derivative metadata JSON with parent linkage
+2. Upload to IPFS
+3. Calculate Keccak256 hash
+4. Return URIs and hashes
 
-// Assets collection
-db.assets.createIndex({ tokenId: 1 });
-db.assets.createIndex({ issuer: 1 });
-db.assets.createIndex({ status: 1 });
-db.assets.createIndex({ assetType: 1 });
+---
 
-// Transactions collection
-db.transactions.createIndex({ txHash: 1 }, { unique: true });
-db.transactions.createIndex({ from: 1 });
-db.transactions.createIndex({ to: 1 });
-db.transactions.createIndex({ tokenId: 1 });
-db.transactions.createIndex({ timestamp: -1 });
+## 📌 API Endpoint 4: Dispute Creation
+
+### `POST /api/disputes/create`
+
+**Purpose:** Create admin review request for similarity 70-90%
+
+**Request Format:** `application/json`
+
+**Request Body:**
+```typescript
+{
+  submittedBy: string,              // Creator wallet address
+  contentHash: string,              // SHA256 hash
+  contentTitle: string,
+  contentDescription: string,
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio',
+  ipfsCid: string,                  // Content IPFS CID
+  parentIpId: string,               // Matched parent IP ID
+  parentContentHash: string,
+  parentTitle: string,
+  similarityScore: number,          // 70-90
+  ipMetadataURI: string,           // Pre-uploaded metadata URI
+  ipMetadataHash: string,
+  nftMetadataURI: string,
+  nftMetadataHash: string
+}
+```
+
+**Response Format:** `application/json`
+
+**Response Body:**
+```typescript
+{
+  disputeId: string,
+  status: 'Pending_Review',
+  message: string
+}
 ```
 
 ---
 
-## 📡 API ENDPOINTS
+## 📌 API Endpoint 5: Cache IP Registration
 
-### **Base URL:** `http://localhost:3001/api` (Backend Server)
-### **Auth Base:** `http://localhost:3001/auth` (Authentication Endpoints)
+### `POST /api/cache/ip-registration`
 
----
+**Purpose:** Cache Story Protocol registration results in database
 
-## 🔐 AUTHENTICATION ENDPOINTS
+**Request Format:** `application/json`
 
-### **1. POST `/auth/register`**
-
-**Purpose:** Register new user account with wallet address
-
-**Authentication:** None (public endpoint)
-
-**Request:**
-```http
-POST /auth/register
-Content-Type: application/json
-
+**Request Body:**
+```typescript
 {
-  "firstName": "John",
-  "lastName": "Doe",
-  "email": "john@example.com",
-  "password": "securePassword123",
-  "confirmPassword": "securePassword123",
-  "walletAddress": "0x1234567890123456789012345678901234567890",
-  "role": "user" // Optional: 'admin', 'issuer', 'manager', 'user' (default: 'user')
-}
-```
-
-**Processing Steps:**
-1. Validate input data (email format, password strength, wallet address format)
-2. Check if email or wallet address already exists
-3. Hash password using bcrypt
-4. Create user document in MongoDB
-5. Generate JWT token with user data and roles
-6. Return user data and token
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "user": {
-      "_id": "507f1f77bcf86cd799439011",
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com",
-      "walletAddress": "0x1234567890123456789012345678901234567890",
-      "roles": ["user"],
-      "primaryRole": "user",
-      "isVerified": false,
-      "kycStatus": "pending",
-      "createdAt": "2025-12-11T10:00:00.000Z",
-      "fullName": "John Doe"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "currentRole": "user",
-    "availableRoles": ["user"],
-    "dashboardRoute": "/marketplace"
+  contentHash: string,              // SHA256 hash
+  ipfsCid: string,                  // Content IPFS CID
+  walletAddress: string,            // Creator address
+  storyIpId: string,                // Story Protocol IP ID (0x...)
+  tokenId: string,                  // NFT token ID (bigint as string)
+  licenseTermsId: string,           // License terms ID (bigint as string)
+  txHash: string,                   // Transaction hash (0x...)
+  title: string,
+  description: string,
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio',
+  royaltyPercent: number,           // 0-100
+  commercialRevShare: number,       // Basis points (royaltyPercent * 100)
+  metadata: {
+    ipMetadataURI: string,
+    ipMetadataHash: string,
+    nftMetadataURI: string,
+    nftMetadataHash: string
   }
 }
 ```
 
-**Error Cases:**
-- 400: Invalid input data (missing fields, invalid format)
-- 409: Email or wallet address already exists
-- 422: Password validation failed
-- 500: Database error
+**Response:** `200 OK` or error
+
+**Backend Implementation:**
+1. Insert into `ip_registrations` table
+2. Link to user wallet
+3. Store all metadata for future queries
+4. Index by `storyIpId`, `contentHash`, `walletAddress`
 
 ---
 
-### **2. POST `/auth/login`**
+## 📌 API Endpoint 6: Cache Derivative Registration
 
-**Purpose:** Authenticate user with email/password or wallet address
+### `POST /api/cache/derivative-registration`
 
-**Authentication:** None (public endpoint)
+**Purpose:** Cache derivative IP registration and parent linkage
 
-**Request:**
-```http
-POST /auth/login
-Content-Type: application/json
+**Request Format:** `application/json`
 
+**Request Body:**
+```typescript
 {
-  // Option 1: Email + Password
-  "email": "john@example.com",
-  "password": "securePassword123",
-  "preferredRole": "issuer" // Optional: If user has multiple roles
-
-  // Option 2: Wallet Address (for wallet-only auth)
-  "walletAddress": "0x1234567890123456789012345678901234567890"
-}
-```
-
-**Processing Steps:**
-1. Find user by email or wallet address
-2. Verify password (if email login)
-3. Generate JWT token with user ID, roles, and current role
-4. Update lastLogin timestamp
-5. Return user data and token
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "_id": "507f1f77bcf86cd799439011",
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com",
-      "walletAddress": "0x1234567890123456789012345678901234567890",
-      "roles": ["user", "issuer"],
-      "primaryRole": "issuer",
-      "isVerified": true,
-      "kycStatus": "approved",
-      "lastLogin": "2025-12-11T10:30:00.000Z",
-      "fullName": "John Doe"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "currentRole": "issuer",
-    "availableRoles": ["user", "issuer"],
-    "dashboardRoute": "/issuer",
-    "hasMultipleRoles": true
+  childIpId: string,                // Child IP ID (0x...)
+  childTokenId: string,             // Child NFT token ID
+  childTxHash: string,              // Registration tx hash
+  parentIpIds: string[],            // Array of parent IP IDs
+  licenseTermsIds: string[],        // License terms from parents
+  linkTxHash: string,               // Derivative linking tx hash
+  contentHash: string,              // SHA256 hash
+  walletAddress: string,            // Creator address
+  title: string,
+  description: string,
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio',
+  similarityScore: number,          // 90-100
+  metadata: {
+    ipMetadataURI: string,
+    ipMetadataHash: string,
+    nftMetadataURI: string,
+    nftMetadataHash: string
   }
 }
 ```
 
-**Error Cases:**
-- 400: Missing credentials
-- 401: Invalid email or password
-- 404: User not found
-- 500: Server error
+**Response:** `200 OK` or error
+
+**Backend Implementation:**
+1. Insert into `ip_registrations` table (status: 'Derivative')
+2. Insert into `derivative_links` table (child-parent mapping)
+3. Store similarity score
+4. Index for royalty distribution queries
 
 ---
 
-### **3. POST `/auth/verify-wallet`**
+## 📌 API Endpoint 7: Get IP Registrations
 
-**Purpose:** Check if wallet address is registered and get available roles
+### `GET /api/assets?walletAddress={address}`
 
-**Authentication:** None (public endpoint)
+**Purpose:** Fetch all IP registrations for a wallet
 
-**Request:**
-```http
-POST /auth/verify-wallet
-Content-Type: application/json
+**Response Format:** `application/json`
 
-{
-  "walletAddress": "0x1234567890123456789012345678901234567890"
-}
+**Response Body:**
+```typescript
+Array<{
+  ipId: string,
+  creator: string,
+  title: string,
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio',
+  contentHash: string,
+  ipfsCid: string,
+  metadataURI: string,
+  licenseTermsId?: string,
+  royaltyRate: number,
+  status: 'Registered' | 'Derivative' | 'Pending_Review',
+  registeredAt: Date,
+  tokenId?: string,
+  txHash?: string
+}>
 ```
 
-**Response:**
+---
+
+## 📊 Metadata JSON Structure
+
+### IP Metadata JSON (Uploaded to IPFS)
 ```json
 {
-  "success": true,
-  "data": {
-    "walletExists": true,
-    "availableRoles": ["user", "issuer"],
-    "userInfo": {
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com"
-    }
-  }
+  "name": "My Creative Work",
+  "description": "A beautiful piece of art",
+  "image": "ipfs://QmContentCID...",
+  "ipType": "Image",
+  "contentHash": "0xabc123...",
+  "creator": "0x1234...",
+  "attributes": [
+    { "trait_type": "IP Type", "value": "Image" },
+    { "trait_type": "Royalty Rate", "value": "10%" },
+    { "trait_type": "Creator", "value": "0x1234..." },
+    { "trait_type": "Blockchain", "value": "Story Protocol" },
+    { "trait_type": "Network", "value": "Story Aeined Testnet" }
+  ]
 }
 ```
 
----
-
-### **4. POST `/auth/switch-role`**
-
-**Purpose:** Switch between available user roles (for users with multiple roles)
-
-**Authentication:** Required (Bearer token)
-
-**Request:**
-```http
-POST /auth/switch-role
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-{
-  "newRole": "manager"
-}
-```
-
-**Response:**
+### Derivative Metadata JSON
 ```json
 {
-  "success": true,
-  "message": "Role switched successfully",
-  "data": {
-    "user": { /* updated user object */ },
-    "token": "newJWTtoken...",
-    "currentRole": "manager",
-    "availableRoles": ["user", "issuer", "manager"],
-    "dashboardRoute": "/manager"
-  }
+  "name": "Derivative Work Title",
+  "description": "Based on parent work",
+  "image": "ipfs://QmContentCID...",
+  "ipType": "Image",
+  "contentHash": "0xdef456...",
+  "creator": "0x5678...",
+  "isDerivative": true,
+  "parentIpId": "0xParentIpId...",
+  "attributes": [
+    { "trait_type": "IP Type", "value": "Image" },
+    { "trait_type": "Is Derivative", "value": "true" },
+    { "trait_type": "Parent IP", "value": "0xParentIpId..." },
+    { "trait_type": "Parent Title", "value": "Original Work" },
+    { "trait_type": "Similarity Score", "value": "95%" },
+    { "trait_type": "Creator", "value": "0x5678..." },
+    { "trait_type": "Blockchain", "value": "Story Protocol" },
+    { "trait_type": "Network", "value": "Story Aeined Testnet" }
+  ]
 }
 ```
 
 ---
 
-### **5. GET `/auth/profile`**
+## 🔄 Complete Registration Flow
 
-**Purpose:** Get current user profile information
+### Original IP Registration (Score < 90%)
+```
+1. User uploads content
+   ↓
+2. Frontend → POST /api/fingerprint (with full metadata)
+   ↓
+3. Backend: fingerprint + IPFS upload
+   ↓
+4. Frontend ← Returns { hash, ipfsCid, ipMetadataURI, ipMetadataHash, ... }
+   ↓
+5. Frontend → POST /api/check-similarity
+   ↓
+6. Backend checks similarity
+   ↓
+7. If score < 40%: proceed
+   If score 40-70%: show warning, user confirms
+   If score 70-90%: POST /api/disputes/create
+   If score >= 90%: show derivative dialog
+   ↓
+8. Frontend → Story Protocol SDK (registerIpAssetWithLicense)
+   ↓
+9. Frontend → POST /api/cache/ip-registration
+   ↓
+10. Done ✅
+```
 
-**Authentication:** Required (Bearer token)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "_id": "507f1f77bcf86cd799439011",
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com",
-      "walletAddress": "0x1234567890123456789012345678901234567890",
-      "roles": ["user", "issuer"],
-      "primaryRole": "issuer",
-      "isVerified": true,
-      "kycStatus": "approved",
-      "fullName": "John Doe"
-    }
-  }
-}
+### Derivative Registration (Score >= 90%)
+```
+1. User shown derivative dialog
+   ↓
+2. User confirms derivative registration
+   ↓
+3. Frontend → POST /api/upload-derivative-metadata
+   ↓
+4. Backend uploads derivative metadata to IPFS
+   ↓
+5. Frontend ← Returns { ipMetadataURI, ipMetadataHash, ... }
+   ↓
+6. Frontend → Story Protocol SDK (registerIpAsset)
+   ↓
+7. Frontend → Story Protocol SDK (registerDerivative - link to parent)
+   ↓
+8. Frontend → POST /api/cache/derivative-registration
+   ↓
+9. Done ✅
 ```
 
 ---
 
-### **6. POST `/auth/logout`**
+## 🎯 Key Points
 
-**Purpose:** Logout user and invalidate token
+1. **Backend handles ALL IPFS uploads** - Frontend never uploads to Pinata
+2. **Metadata is created in backend** - Ensures consistency and completeness
+3. **Frontend focuses on Story Protocol SDK** - Direct blockchain interaction
+4. **Backend caches all results** - Fast queries without blockchain reads
+5. **Similarity detection is backend logic** - Centralized and secure
+6. **Hashing uses SHA256 for content, Keccak256 for metadata** - Story Protocol standard
 
-**Authentication:** Required (Bearer token)
+---
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Logout successful"
-}
+## 📝 Database Schema Recommendations
+
+### `ip_registrations` table
+```sql
+CREATE TABLE ip_registrations (
+  id SERIAL PRIMARY KEY,
+  story_ip_id VARCHAR(66) UNIQUE NOT NULL,
+  token_id VARCHAR(100),
+  content_hash VARCHAR(66) UNIQUE NOT NULL,
+  ipfs_cid VARCHAR(100) NOT NULL,
+  creator_address VARCHAR(42) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  ip_type VARCHAR(20) NOT NULL,
+  status VARCHAR(20) DEFAULT 'Registered',
+  royalty_percent INTEGER NOT NULL,
+  license_terms_id VARCHAR(100),
+  tx_hash VARCHAR(66),
+  ip_metadata_uri TEXT,
+  ip_metadata_hash VARCHAR(66),
+  nft_metadata_uri TEXT,
+  nft_metadata_hash VARCHAR(66),
+  registered_at TIMESTAMP DEFAULT NOW(),
+  INDEX (creator_address),
+  INDEX (content_hash),
+  INDEX (story_ip_id)
+);
+```
+
+### `derivative_links` table
+```sql
+CREATE TABLE derivative_links (
+  id SERIAL PRIMARY KEY,
+  child_ip_id VARCHAR(66) NOT NULL,
+  parent_ip_id VARCHAR(66) NOT NULL,
+  license_terms_id VARCHAR(100),
+  similarity_score DECIMAL(5,2),
+  link_tx_hash VARCHAR(66),
+  created_at TIMESTAMP DEFAULT NOW(),
+  INDEX (child_ip_id),
+  INDEX (parent_ip_id)
+);
+```
+
+### `disputes` table
+```sql
+CREATE TABLE disputes (
+  id SERIAL PRIMARY KEY,
+  submitted_by VARCHAR(42) NOT NULL,
+  content_hash VARCHAR(66) NOT NULL,
+  content_title VARCHAR(255),
+  ip_type VARCHAR(20),
+  ipfs_cid VARCHAR(100),
+  parent_ip_id VARCHAR(66),
+  similarity_score DECIMAL(5,2),
+  status VARCHAR(20) DEFAULT 'Pending_Review',
+  ip_metadata_uri TEXT,
+  admin_decision VARCHAR(20),
+  created_at TIMESTAMP DEFAULT NOW(),
+  reviewed_at TIMESTAMP,
+  INDEX (submitted_by),
+  INDEX (status)
+);
 ```
 
 ---
 
-## 🔐 AUTHENTICATION & SECURITY
+## ✅ Implementation Checklist
 
-### **JWT Token Structure**
-```javascript
-{
-  "userId": "507f1f77bcf86cd799439011",
-  "email": "john@example.com",
-  "walletAddress": "0x1234567890123456789012345678901234567890",
-  "roles": ["user", "issuer"],
-  "currentRole": "issuer",
-  "primaryRole": "issuer",
-  "iat": 1702300800, // Issued at
-  "exp": 1702387200  // Expiration (24 hours)
-}
-```
-
-### **Token Storage**
-- **Frontend:** Stored in localStorage as `authToken`
-- **Header Format:** `Authorization: Bearer <token>`
-- **Expiration:** 24 hours (configurable)
-
-### **Protected Routes**
-All API endpoints except `/auth/register`, `/auth/login`, `/auth/verify-wallet`, and `/auth/health` require JWT authentication.
-
-### **Role-Based Access Control (RBAC)**
-
-| Role | Permissions |
-|------|-------------|
-| **admin** | Full system access, manage all users, approve/reject token requests, settlement oversight |
-| **issuer** | Create token requests, deploy tokens, list on marketplace, view own assets |
-| **manager** | Process settlements, manage token lifecycle, view all assets |
-| **user** | Buy/sell tokens, view marketplace, manage portfolio |
-
-### **Wallet Signature Verification** (Optional Enhancement)
-```javascript
-// For additional security, verify wallet ownership
-function verifyWalletSignature(address, signature, message) {
-  const recoveredAddress = ethers.utils.verifyMessage(message, signature);
-  return recoveredAddress.toLowerCase() === address.toLowerCase();
-}
-```
-
----
-
-## 🚀 FRONTEND AUTHENTICATION FLOW
-
-### **1. User Registration Flow**
-```
-User fills registration form
-  → Frontend validates input
-  → POST /auth/register with user data + wallet address
-  → Backend creates user + generates JWT
-  → Frontend stores token in localStorage
-  → Redirect to appropriate dashboard based on role
-```
-
-### **2. User Login Flow**
-```
-User enters email + password (or connects wallet)
-  → Frontend validates input
-  → POST /auth/login
-  → Backend verifies credentials + generates JWT
-  → Frontend stores token + user data in localStorage
-  → Initialize WalletContext (connect MetaMask)
-  → Initialize AuthContext (decode JWT)
-  → Redirect to dashboard based on currentRole
-```
-
-### **3. Wallet Connection Flow**
-```
-User clicks "Connect Wallet"
-  → WalletContext.connectWallet()
-  → Request accounts from MetaMask via window.ethereum
-  → ethers.js creates Web3Provider
-  → Get signer and wallet address
-  → Verify network (Flow Testnet - Chain ID: 747)
-  → Switch network if needed
-  → Store connection state in localStorage
-  → Initialize contract instances with signer
-```
-
-### **4. Contract Authorization Flow**
-```
-User attempts action (e.g., create token request)
-  → Frontend checks JWT role (AuthContext)
-  → Frontend checks wallet connection (WalletContext)
-  → Frontend calls robustAuthorizationService.isAuthorizedIssuer()
-  → Service queries Admin contract: contract.isIssuer(address)
-  → If authorized, proceed with action
-  → If not authorized, show error
-```
-
-### **5. Buy/Sell Flow**
-```
-User clicks "Buy" on marketplace listing
-  → BuyModal opens with listing details
-  → User enters quantity
-  → Frontend calculates total price
-  → Check marketplace approval: token.isApprovedForAll()
-  → If not approved, request approval: token.setApprovalForAll()
-  → Execute buy: marketplace.buyToken(tokenId, amount, { value: price })
-  → Wait for transaction confirmation
-  → Update UI with new balances
-  → Store transaction in backend
-```
-
----
-
-## ✅ IMPLEMENTATION SUMMARY
-
-### **Current Authentication Stack**
-✅ JWT-based authentication with bcrypt password hashing
-✅ Multi-role system (admin, issuer, manager, user)
-✅ Wallet address integration (MetaMask via ethers.js)
-✅ Role switching for users with multiple roles
-✅ On-chain authorization via Admin contract
-✅ Network validation (Flow Testnet - Chain ID: 747)
-
-### **Blockchain Integration**
-✅ Flow EVM Testnet (Chain ID: 747)
-✅ Smart contracts: Admin, TokenManagement, Marketplace, PaymentSplitter, ERC1155Core
-✅ Direct marketplace listing service
-✅ Token buy/sell functionality
-✅ Invoice settlement with automatic token burning
-
-### **Data Flow**
-```
-User Authentication → JWT Token → Role Verification → Wallet Connection →
-Contract Authorization → Transaction Execution → Backend Logging
-```
-
-**End of Backend Specification. This document reflects the current implementation as of December 11, 2025.**
+- [ ] POST /api/fingerprint - Content fingerprinting + IPFS upload
+- [ ] POST /api/check-similarity - Similarity detection
+- [ ] POST /api/upload-derivative-metadata - Derivative metadata upload
+- [ ] POST /api/disputes/create - Admin review queue
+- [ ] POST /api/cache/ip-registration - Cache original IP
+- [ ] POST /api/cache/derivative-registration - Cache derivative IP
+- [ ] GET /api/assets - Fetch user's IP registrations
+- [ ] Database schema implementation
+- [ ] Pinata API integration
+- [ ] SHA256 hashing utility
+- [ ] Keccak256 hashing utility (ethers.utils.keccak256)
+- [ ] Similarity algorithm implementation
