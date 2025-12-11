@@ -38,6 +38,30 @@ export const CONTRACT_ADDRESSES = {
     MOCK_STABLECOIN: "0x40ACd6248Af692021C82b8333092De184c6e33Ff",
     MOCK_SPV_BANK_FEED: "0x0b0fD8855a03Bcd63CfA5A1fC6145FF3552c96a4",
     MERKLE_KYC: "0x65374809f4201Ac29E8176db4B764a0ae360ff56"
+  },
+
+  // Story Protocol Aeneid Testnet (IP Asset Management)
+  STORY_AENEID_TESTNET: {
+    // Orion Custom Contracts (Deployed Dec 12, 2025)
+    ORION_VERIFIED_MINTER: "0x9cb153775B639DCa50F1BA7a6daa34af12466450", // Custom wrapper with backend signature verification
+    SPG_NFT_COLLECTION: "0x15aAe0E870Aab25B09F4453239967e0aff1868C2", // SPG collection for IP asset minting
+    
+    // Story Protocol Core Contracts (Provided by Story Protocol)
+    IP_ASSET_REGISTRY: "0x77319B4031e6eF1250907aa00018B8B1c67a244b", // Central IP registry
+    LICENSING_MODULE: "0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae", // License attachment and verification
+    ROYALTY_MODULE: "0x3C27b2d6C0a1C5c8A79b6753F32e4c5e3e3f5F1e", // Royalty payment distribution
+    REGISTRATION_WORKFLOWS: "0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424", // SPG creation and registration
+    
+    // Collection Configuration
+    COLLECTION_NAME: "Orion IP-OPS Assets",
+    COLLECTION_SYMBOL: "ORION",
+    MAX_SUPPLY: 100, // Initial limit, can be updated
+    MINT_FEE: 0, // Free minting (platform charges via backend)
+    IS_PUBLIC_MINTING: false, // Only verified minter can mint
+    
+    // Backend Verification
+    BACKEND_VERIFIER_ADDRESS: "0x23e67597f0898f747Fa3291C8920168adF9455D0", // Public address for signature verification
+    TOKEN_EXPIRY_SECONDS: 900 // 15 minutes
   }
 } as const;
 
@@ -62,6 +86,17 @@ export const NETWORK_CONFIG = {
     nativeCurrency: {
       name: "FLOW",
       symbol: "FLOW",
+      decimals: 18
+    }
+  },
+  STORY_AENEID_TESTNET: {
+    chainId: 1315,
+    name: "Story Protocol Aeneid Testnet",
+    rpcUrl: "https://aeneid.storyrpc.io",
+    blockExplorer: "https://aeneid.storyscan.xyz",
+    nativeCurrency: {
+      name: "IP Token",
+      symbol: "IP",
       decimals: 18
     }
   }
