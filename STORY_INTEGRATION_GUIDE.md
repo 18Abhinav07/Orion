@@ -60,9 +60,9 @@ Stage 5: Royalty Distribution (AUTOMATIC)
 createNFTCollection(params: {
   name: string,              // "IP-OPS Creative Assets"
   symbol: string,            // "IPOPS"
-  isPublicMinting: boolean,  // false (only platform can mint)
+  isPublicMinting: boolean,  // false (only platform can mint) // Changed to : true (Reason : Various artists and other owning RWA will be minting thier ips with the aid of our contract not requesting the platform to mint it)
   mintOpen: boolean,         // true
-  mintFeeRecipient: Address, // Platform wallet or zero address
+  mintFeeRecipient: Address, // Platform wallet
   contractURI: string        // Optional collection metadata
 }) => Promise<{
   spgNftContract: Address,   // Store this in your config!
