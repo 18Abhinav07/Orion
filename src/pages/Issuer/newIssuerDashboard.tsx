@@ -10,69 +10,120 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'react-hot-toast';
-import { FileText, Plus, Clock, CheckCircle, XCircle, Rocket, Package } from 'lucide-react';
+import { FileText, Plus, Clock, CheckCircle, XCircle, Rocket, Package, AlertTriangle } from 'lucide-react';
 import { useWallet } from '../../context/WalletContext';
-import TokenManagementService from '../../services/tokenManagementService';
-import DirectMarketplaceListingService from '../../services/directMarketplaceListingService';
-import RobustAuthorizationService from '../../services/robustAuthorizationService';
-import { ADMIN_CONTRACT, TOKEN_CONTRACT, MARKETPLACE_CONTRACT, TOKEN_MANAGEMENT_CONTRACT, ISSUER_CONTRACT } from '../../lib/contractAddress';
+
+// ❌ OLD: Flow blockchain services (COMMENTED OUT - NOT DELETED)
+// import TokenManagementService from '../../services/tokenManagementService';
+// import DirectMarketplaceListingService from '../../services/directMarketplaceListingService';
+// import RobustAuthorizationService from '../../services/robustAuthorizationService';
+// import { ADMIN_CONTRACT, TOKEN_CONTRACT, MARKETPLACE_CONTRACT, TOKEN_MANAGEMENT_CONTRACT, ISSUER_CONTRACT } from '../../lib/contractAddress';
+
+// ✅ NEW: Story Protocol SDK and services
+import { storyProtocolService } from '../../services/storyProtocolService';
+import { STORY_CONFIG, STORY_CONTRACTS, IP_TYPES, SIMILARITY_THRESHOLDS } from '../../lib/storyProtocolConfig';
+
+// ✅ KEEP: Pinata IPFS upload (still used for Story Protocol metadata)
 import { uploadJSONToPinata, uploadToPinata } from '../../utils/pinata';
 
 // Invoice Financing Components
 import TokenStatusCard from '../../components/invoice-financing/investor/TokenStatusCard';
 import PortfolioSettlements from '../../components/invoice-financing/investor/PortfolioSettlements';
 
-const assetTypes = [
-  
-  'Invoice'
-];
+// ❌ OLD: Real estate/invoice asset types
+// const assetTypes = ['Invoice'];
 
-interface TokenRequest {
-  requestId: string;
-  issuer: string;
+// ✅ NEW: IP asset types for Story Protocol
+const assetTypes = ['Text', 'Image', 'Video', 'Audio'];
+
+// ❌ OLD: Flow blockchain token request interface
+// interface TokenRequest {
+//   requestId: string;
+//   issuer: string;
+//   metadataURI: string;
+//   amount: string;
+//   price: string;
+//   status: 'Pending' | 'Approved' | 'Rejected' | 'Deployed' | 'Listed';
+//   submittedAt: Date;
+//   approvedAt?: Date;
+//   deployedAt?: Date;
+//   tokenId?: string;
+//   rejectionReason?: string;
+// }
+
+// ✅ NEW: Story Protocol IP registration interface
+interface IPRegistration {
+  ipId: string;
+  creator: string;
+  title: string;
+  ipType: 'Text' | 'Image' | 'Video' | 'Audio';
+  contentHash: string;
+  ipfsCid: string;
   metadataURI: string;
-  amount: string;
-  price: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Deployed' | 'Listed';
-  submittedAt: Date;
-  approvedAt?: Date;
-  deployedAt?: Date;
+  licenseTermsId?: string;
+  royaltyRate: number;
+  status: 'Registered' | 'Derivative' | 'Pending_Review';
+  registeredAt: Date;
   tokenId?: string;
-  rejectionReason?: string;
+  txHash?: string;
 }
 
 const NewIssuerDashboard: React.FC = () => {
   const { address, isConnected, connectWallet, provider, signer } = useWallet();
-  
-    // Service states
-  const [tokenManagementService, setTokenManagementService] = useState(null);
-  const [directListingService, setDirectListingService] = useState(null);
-  const [authService, setAuthService] = useState(null);
-  const [legacyIssuerService, setLegacyIssuerService] = useState(null);
-  const [isServiceInitialized, setIsServiceInitialized] = useState(false);
-  
-  // Authorization
-  const [isAuthorizedIssuer, setIsAuthorizedIssuer] = useState<boolean | null>(null);
+
+  // ❌ OLD: Flow blockchain service states (COMMENTED OUT)
+  // const [tokenManagementService, setTokenManagementService] = useState(null);
+  // const [directListingService, setDirectListingService] = useState(null);
+  // const [authService, setAuthService] = useState(null);
+  // const [legacyIssuerService, setLegacyIssuerService] = useState(null);
+  // const [isServiceInitialized, setIsServiceInitialized] = useState(false);
+
+  // ✅ NEW: Story Protocol SDK initialization state
+  const [isStorySDKInitialized, setIsStorySDKInitialized] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+
+  // Authorization (keep similar structure)
+  const [isAuthorizedCreator, setIsAuthorizedCreator] = useState<boolean | null>(null);
   const [authCheckLoading, setAuthCheckLoading] = useState(false);
-  
+
   // Current view
   const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // Token requests state
-  const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
-  const [loadingRequests, setLoadingRequests] = useState(false);
-  
-  // Request submission form
-  const [showRequestDialog, setShowRequestDialog] = useState(false);
-  const [requestForm, setRequestForm] = useState({
+
+  // ❌ OLD: Token requests state (COMMENTED OUT)
+  // const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
+  // const [loadingRequests, setLoadingRequests] = useState(false);
+
+  // ✅ NEW: IP registrations state
+  const [ipRegistrations, setIpRegistrations] = useState<IPRegistration[]>([]);
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false);
+
+  // ❌ OLD: Request submission form (COMMENTED OUT - will replace)
+  // const [showRequestDialog, setShowRequestDialog] = useState(false);
+  // const [requestForm, setRequestForm] = useState({
+  //   title: '',
+  //   description: '',
+  //   assetType: '',
+  //   amount: '',
+  //   pricePerToken: '',
+  //   imageFiles: [] as File[]
+  // });
+
+  // ✅ NEW: IP registration form
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  const [registerForm, setRegisterForm] = useState({
     title: '',
     description: '',
-    assetType: '',
-    amount: '',
-    pricePerToken: '',
-    imageFiles: [] as File[]
+    ipType: '',
+    royaltyPercent: '10',
+    contentFiles: [] as File[]
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ✅ NEW: Derivative detection state
+  const [showDerivativeDialog, setShowDerivativeDialog] = useState(false);
+  const [detectedParent, setDetectedParent] = useState<any>(null);
+  const [similarityScore, setSimilarityScore] = useState(0);
+  const [currentContentHash, setCurrentContentHash] = useState('');
 
   // Initialize service and check authorization
   useEffect(() => {
