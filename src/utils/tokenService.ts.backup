@@ -1,0 +1,544 @@
+import { ethers } from 'ethers';
+import { MARKETPLACE_ABI } from './marketplaceABI';
+import { MASTER_TOKEN_ABI } from './masterTokenABI';
+import { MARKETPLACE_CONTRACT, TOKEN_CONTRACT } from '../lib/contractAddress';
+
+export interface TokenInfo {
+  id: string;
+  name: string;
+  symbol: string;
+  totalSupply: number;
+  userBalance:  async fetchMarketplaceListings(userAddress?: string): Promise<TokenInfo[]> {
+    try {
+      console.log('🚀🚀🚀 UPDATED MARKETPLACE LISTINGS FETCH STARTING NOW! 🚀🚀🚀');
+      console.log('📍 User address:', userAddress);
+      console.log('📍 Marketplace contract:', this.marketplaceAddress);
+      console.log('📍 Token contract:', this.tokenAddress);
+      
+      // ADD A VERY OBVIOUS TEST MESSAGE
+      alert('🚨 UPDATED TokenService.fetchMarketplaceListings() is running! Check console for logs.');r;
+  isListed: boolean;
+  price?: number;
+  exists: boolean;
+  description?: string;
+  image?: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+}
+
+export class TokenService {
+  private provider: ethers.providers.Provider;
+  private signer?: ethers.Signer;
+  private marketplaceAddress: string;
+  private tokenAddress: string;
+
+  constructor(provider: ethers.providers.Provider, signer?: ethers.Signer) {
+    this.provider = provider;
+    this.signer = signer;
+    this.marketplaceAddress = MARKETPLACE_CONTRACT;
+    this.tokenAddress = TOKEN_CONTRACT;
+  }
+
+  /**
+   * FIXED: Only returns tokens that the user actually owns (balance > 0)
+   * This prevents the "insufficient balance" error by not showing tokens the user doesn't have
+   */
+  async fetchAllTokens(userAddress?: string): Promise<TokenInfo[]> {
+    try {
+      console.log('🔄 FIXED TOKEN FETCHING: Only showing tokens with user balance > 0...');
+      
+      if (!userAddress) {
+        console.log('No user address provided, returning empty array');
+        return [];
+      }
+
+      const signerOrProvider = this.signer || this.provider;
+      const marketplaceContract = new ethers.Contract(
+        this.marketplaceAddress,
+        MARKETPLACE_ABI,
+        signerOrProvider
+      );
+
+      // Create token contract for balance checks
+      const erc1155ABI = [
+        "function balanceOf(address account, uint256 id) view returns (uint256)",
+        "function uri(uint256 id) view returns (string)"
+      ];
+      
+      const tokenContract = new ethers.Contract(
+        this.tokenAddress,
+        erc1155ABI,
+        this.provider
+      );
+
+      const tokens: TokenInfo[] = [];
+
+      console.log('📞 Checking user balance for tokens 1-10...');
+      
+      // Check tokens 1-10 for actual user balance
+      for (let tokenId = 1; tokenId <= 10; tokenId++) {
+        try {
+          const balance = await tokenContract.balanceOf(userAddress, tokenId);
+          const userBalance = parseInt(balance.toString()); // ERC1155 balance is already a number
+          
+          // ONLY include tokens where user has balance > 0
+          if (userBalance > 0) {
+            console.log(`✅ Found owned Token ID ${tokenId} with balance:`, userBalance);
+            
+            // Get token metadata
+            let name = `Token #${tokenId}`;
+            let symbol = `TOKEN${tokenId}`;
+            
+            try {
+              const uri = await tokenContract.uri(tokenId);
+              if (uri) {
+                const metadata = await this.fetchTokenMetadata(uri);
+                if (metadata) {
+                  name = metadata.name || name;
+                  symbol = metadata.symbol || symbol;
+                }
+              }
+            } catch (metadataError) {
+              console.log(`Could not fetch metadata for token ${tokenId}`);
+            }
+
+            // Get total supply from custom mapping
+            let totalSupply = 0;
+            try {
+              const supply = await tokenContract.tokenSupply(tokenId);
+              totalSupply = parseFloat(ethers.utils.formatEther(supply));
+            } catch (supplyError) {
+              console.log(`Could not fetch total supply for token ${tokenId}`);
+            }
+
+            // Check if this token is listed on marketplace
+            let isListed = false;
+            let price = 0;
+            try {
+              const [allTokenIds, , , allPrices] = await marketplaceContract.getAllListings();
+              for (let i = 0; i < allTokenIds.length; i++) {
+                if (allTokenIds[i].toString() === tokenId.toString()) {
+                  isListed = true;
+                  price = parseFloat(ethers.utils.formatEther(allPrices[i]));
+                  break;
+                }
+              }
+            } catch (listingError) {
+              console.log('Could not check marketplace listings');
+            }
+
+            tokens.push({
+              id: tokenId.toString(),
+              name,
+              symbol,
+              totalSupply,
+              userBalance,
+              isListed,
+              price,
+              exists: true
+            });
+          }
+        } catch (balanceError) {
+          // Skip tokens that error out
+        }
+      }
+      
+      console.log(`✅ SUCCESS: Returning ${tokens.length} tokens with user balance > 0:`, 
+        tokens.map(t => `ID ${t.id} (${t.userBalance} tokens)`));
+      
+      if (tokens.length === 0) {
+        console.log('⚠️ WARNING: User has no tokens with balance > 0');
+      }
+      
+      return tokens;
+
+    } catch (error) {
+      console.error('Error fetching user-owned tokens:', error);
+      return [];
+    }
+  }
+
+  async getTokenBalance(tokenId: string, userAddress: string): Promise<number> {
+    try {
+      console.log(`🔍 Fetching WALLET balance for Token ID ${tokenId}, User: ${userAddress}`);
+      
+      try {
+        // For OrderBook, check actual wallet balance using ERC1155 balanceOf
+        const erc1155ABI = [
+          "function balanceOf(address account, uint256 id) view returns (uint256)"
+        ];
+        
+        const tokenContract = new ethers.Contract(
+          this.tokenAddress,
+          erc1155ABI,
+          this.provider
+        );
+        
+        const walletBalance = await tokenContract.balanceOf(userAddress, tokenId);
+        const balance = parseInt(walletBalance.toString());
+        console.log(`✅ Token ID ${tokenId} WALLET balance: ${balance} (for OrderBook)`);
+        return balance;
+        
+      } catch (contractError) {
+        console.warn(`⚠️ Wallet balance call failed for token ${tokenId}:`, contractError.message);
+        return 0; // Return 0 if balance call fails
+      }
+      
+    } catch (error) {
+      console.error('❌ Error setting up marketplace contract:', error);
+      return 0;
+    }
+  }
+
+  async getU2UBalance(userAddress: string): Promise<string> {
+    try {
+      const balance = await this.provider.getBalance(userAddress);
+      return ethers.utils.formatEther(balance);
+    } catch (error) {
+      console.error('Error fetching U2U balance:', error);
+      return '0';
+    }
+  }
+
+  private async fetchTokenMetadata(metadataURI: string): Promise<any> {
+    try {
+      console.log('🔄 Fetching metadata from IPFS:', metadataURI);
+      
+      // Get JWT token from environment
+      const JWT_TOKEN = process.env.REACT_APP_JWT_SECRET || import.meta?.env?.VITE_JWT_SECRET || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJjMDU3NzI3NC0xMzU2LTRmZjgtODk5Yi02MjU0MTZmNTMxYTEiLCJlbWFpbCI6ImFkb2U3NDAzQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJlZTdmZDhiNDY3MGU4ZTc1Y2YxZiIsInNjb3BlZEtleVNlY3JldCI6Ijg3NjU3MDdkNzBmNzAyZjFkYTAxMmVhNmU1MmYzNDUyMjFkOGE0YzgwMWFjYjVlN2Y4NTk5NzYwODIyNTc3ZGYiLCJleHAiOjE3OTA5Mzk1NTR9.huKruxuknG20OfbJsMjiuIaLTQMbCWsILk1B5Dl7Oko';
+      
+      // Smart IPFS URL handling - avoid double gateway URLs
+      let ipfsHash = '';
+      if (metadataURI.includes('https://gateway.pinata.cloud/ipfs/https://gateway.pinata.cloud/ipfs/')) {
+        // Handle doubled gateway URLs by extracting the final hash
+        const parts = metadataURI.split('https://gateway.pinata.cloud/ipfs/');
+        if (parts.length > 2) {
+          const lastPart = parts[parts.length - 1];
+          if (lastPart.startsWith('Qm') || lastPart.startsWith('baf')) {
+            ipfsHash = lastPart;
+          } else {
+            throw new Error('Invalid doubled IPFS URL');
+          }
+        } else {
+          throw new Error('Invalid doubled IPFS URL format');
+        }
+      } else if (metadataURI.startsWith('ipfs://')) {
+        // Convert ipfs:// to hash
+        ipfsHash = metadataURI.replace('ipfs://', '');
+      } else if (metadataURI.startsWith('https://gateway.pinata.cloud/ipfs/')) {
+        // Extract hash from gateway URL
+        ipfsHash = metadataURI.replace('https://gateway.pinata.cloud/ipfs/', '');
+      } else if (metadataURI.startsWith('Qm') || metadataURI.startsWith('baf')) {
+        // Raw IPFS hash
+        ipfsHash = metadataURI;
+      } else {
+        throw new Error('Unrecognized IPFS format: ' + metadataURI);
+      }
+      
+      // Skip obviously fake/test hashes
+      if (ipfsHash.includes('TestHash') || ipfsHash.length < 40) {
+        console.log('⚠️ Skipping fake/test metadata hash:', ipfsHash);
+        return null;
+      }
+      
+      // Multiple IPFS gateways for fallback - Pinata first with JWT auth
+      const gateways = [
+        {
+          url: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
+          requiresAuth: true,
+          name: 'Pinata (Authenticated)'
+        },
+        {
+          url: `https://ipfs.io/ipfs/${ipfsHash}`,
+          requiresAuth: false,
+          name: 'IPFS.io'
+        },
+        {
+          url: `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
+          requiresAuth: false,
+          name: 'Cloudflare'
+        },
+        {
+          url: `https://dweb.link/ipfs/${ipfsHash}`,
+          requiresAuth: false,
+          name: 'DWeb.link'
+        }
+      ];
+      
+      console.log('🌐 Trying multiple IPFS gateways...');
+      
+      // Try each gateway with timeout and appropriate headers
+      for (let i = 0; i < gateways.length; i++) {
+        const gateway = gateways[i];
+        console.log(`🔄 Trying gateway ${i + 1}/${gateways.length}: ${gateway.name} - ${gateway.url}`);
+        
+        try {
+          const headers: Record<string, string> = {
+            'Accept': 'application/json'
+          };
+          
+          const response = await Promise.race([
+            fetch(gateway.url, {
+              method: 'GET',
+              headers
+            }),
+            new Promise<Response>((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), 8000)
+            )
+          ]);
+          
+          if (response.ok) {
+            const metadata = await response.json();
+            console.log(`✅ Metadata fetched successfully from ${gateway.name}`);
+            
+            // Smart image processing - handle various IPFS URL formats
+            if (metadata.image) {
+              if (metadata.image.startsWith('ipfs://')) {
+                const imageHash = metadata.image.replace('ipfs://', '');
+                metadata.image = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
+                console.log('✅ Converted IPFS image URL:', metadata.image);
+              } else if (metadata.image.startsWith('https://gateway.pinata.cloud/ipfs/')) {
+                // Already a gateway URL, use as-is
+                console.log('✅ Image already in gateway format:', metadata.image);
+              } else if (metadata.image.startsWith('Qm') || metadata.image.startsWith('baf')) {
+                // Raw IPFS hash
+                metadata.image = `https://gateway.pinata.cloud/ipfs/${metadata.image}`;
+                console.log('✅ Converted raw IPFS hash to gateway URL:', metadata.image);
+              }
+            }
+            
+            return metadata;
+          } else if (response.status === 429) {
+            console.log(`⚠️ Gateway ${gateway.name} rate limited (429), trying next...`);
+            continue; // Try next gateway
+          } else if (response.status === 403) {
+            console.log(`⚠️ Gateway ${gateway.name} access forbidden (403), trying next...`);
+            continue; // Try next gateway
+          } else {
+            console.log(`⚠️ Gateway ${i + 1} failed with status ${response.status}, trying next...`);
+            continue; // Try next gateway
+          }
+        } catch (gatewayError) {
+          console.log(`⚠️ Gateway ${i + 1} error: ${gatewayError.message}, trying next...`);
+          continue; // Try next gateway
+        }
+      }
+      
+      throw new Error('All IPFS gateways failed or rate limited');
+      
+    } catch (error) {
+      console.error('❌ Error fetching IPFS metadata:', error);
+      return null;
+    }
+  }
+
+  /**
+   * NEW: Fetch all listed tokens from marketplace for OrderBook/Secondary marketplace
+   * This shows ALL listed tokens, not just ones the user owns
+   */
+  async fetchMarketplaceListings(userAddress?: string): Promise<TokenInfo[]> {
+    try {
+      console.log('� STARTING MARKETPLACE LISTINGS FETCH for OrderBook...');
+      console.log('📍 User address:', userAddress);
+      console.log('📍 Marketplace contract:', this.marketplaceAddress);
+      console.log('📍 Token contract:', this.tokenAddress);
+      
+      const signerOrProvider = this.signer || this.provider;
+      const marketplaceContract = new ethers.Contract(
+        this.marketplaceAddress,
+        MARKETPLACE_ABI,
+        signerOrProvider
+      );
+
+      // Create token contract for metadata and balance checks - use same ABI as primary marketplace
+      const tokenABI = [
+        "function balanceOf(address account, uint256 id) view returns (uint256)",
+        "function uri(uint256 id) view returns (string)",
+        "function tokenMetadata(uint256 tokenId) external view returns (string memory)",
+        "function tokenPrice(uint256 tokenId) external view returns (uint256)"
+      ];
+      
+      const tokenContract = new ethers.Contract(
+        this.tokenAddress,
+        tokenABI,
+        this.provider
+      );
+
+      console.log('📞 Getting all marketplace listings...');
+      
+      // Get all marketplace listings - returns [tokenIds[], issuers[], amounts[], prices[]]
+      const listingsResult = await marketplaceContract.getAllListings();
+      const [tokenIds, issuers, amounts, prices] = listingsResult;
+      console.log(`Found ${tokenIds.length} marketplace listings`);
+
+      const tokens: TokenInfo[] = [];
+
+      // Process each listing
+      for (let i = 0; i < tokenIds.length; i++) {
+        const tokenId = tokenIds[i].toString();
+        const issuer = issuers[i];
+        const amount = amounts[i].toString();
+        const price = prices[i];
+
+        try {
+          // Get user's WALLET balance for this token (for OrderBook non-custodial trading)
+          let userBalance = 0;
+          if (userAddress) {
+            try {
+              // For OrderBook, check actual wallet balance, not marketplace balance
+              console.log(`🔍 DEBUGGING: Checking wallet balance for token ${tokenId}, user: ${userAddress}`);
+              const walletBalance = await tokenContract.balanceOf(userAddress, tokenId);
+              userBalance = parseInt(walletBalance.toString());
+              console.log(`✅ DEBUGGING: User wallet balance for token ${tokenId}: ${userBalance} (for OrderBook trading)`);
+              
+            } catch (balanceError) {
+              console.warn(`❌ DEBUGGING: Could not fetch wallet balance for token ${tokenId}:`, balanceError.message);
+              userBalance = 0; // Default to 0 if balance call fails
+            }
+          } else {
+            console.log(`⚠️ DEBUGGING: No userAddress provided, setting balance to 0`);
+          }
+
+          // Get token metadata with enhanced fetching
+          let name = `Property #${tokenId}`;
+          let symbol = `PROP${tokenId}`;
+          let description = '';
+          let image = '';
+          let attributes: Array<{trait_type: string; value: string}> = [];
+          
+          try {
+            console.log(`🔍 Fetching metadata for token ${tokenId}...`);
+            
+            // Get token metadata URI using same method as primary marketplace
+            let metadataURI = '';
+            try {
+              // Try tokenMetadata first (custom function)
+              console.log(`🔍 Trying tokenMetadata() for token ${tokenId}...`);
+              metadataURI = await tokenContract.tokenMetadata(tokenId);
+              console.log('✅ Got metadata URI from tokenMetadata:', metadataURI);
+            } catch (e) {
+              console.log(`⚠️ tokenMetadata() failed for token ${tokenId}:`, e.message);
+              try {
+                // Fallback to uri function (standard ERC1155)
+                console.log(`🔍 Trying uri() for token ${tokenId}...`);
+                metadataURI = await tokenContract.uri(tokenId);
+                console.log('✅ Got metadata URI from uri:', metadataURI);
+              } catch (e2) {
+                console.warn(`⚠️ Both tokenMetadata() and uri() failed for token ${tokenId}:`, e2.message);
+                metadataURI = ''; // Will use fallback data
+              }
+            }
+            
+            if (metadataURI && metadataURI !== '') {
+              console.log(`📄 Found metadata URI for token ${tokenId}: ${metadataURI}`);
+              const metadata = await this.fetchTokenMetadata(metadataURI);
+              
+              if (metadata) {
+                name = metadata.name || metadata.title || name;
+                symbol = metadata.symbol || `TOKEN${tokenId}`;
+                description = metadata.description || '';
+                image = metadata.image || '';
+                attributes = metadata.attributes || [];
+                console.log(`✅ SUCCESSFULLY LOADED METADATA for token ${tokenId}:`, { 
+                  name, 
+                  symbol, 
+                  description: description.substring(0, 50) + '...',
+                  image: image.substring(0, 50) + '...',
+                  attributesCount: attributes.length,
+                  assetType: attributes.find(attr => attr.trait_type === 'Asset Type')?.value || 'Not found'
+                });
+                console.log(`🔍 FULL METADATA OBJECT for token ${tokenId}:`, metadata);
+              } else {
+                console.log(`⚠️ Could not parse metadata for token ${tokenId}, using fallback`);
+              }
+            } else {
+              console.log(`⚠️ No metadata URI found for token ${tokenId}, using fallback name`);
+            }
+          } catch (metadataError) {
+            console.log(`⚠️ Could not fetch metadata for token ${tokenId}:`, metadataError.message);
+          }
+
+          // Add token to list - INCLUDE ALL LISTED TOKENS
+          const tokenInfo: TokenInfo = {
+            id: tokenId,
+            name: name,
+            symbol: symbol,
+            totalSupply: parseInt(amount), // ERC1155 amount is already a number, not wei
+            userBalance: userBalance,
+            isListed: true,
+            price: price ? parseFloat(ethers.utils.formatEther(price)) : 0,
+            exists: true,
+            description: description,
+            image: image,
+            attributes: attributes
+          };
+          
+          tokens.push(tokenInfo);
+
+          console.log(`✅ FINAL TOKEN OBJECT for token ${tokenId}:`, {
+            tokenId: tokenInfo.id,
+            name: tokenInfo.name,
+            description: tokenInfo.description?.substring(0, 50) + '...',
+            userBalance: tokenInfo.userBalance,
+            totalSupply: tokenInfo.totalSupply,
+            hasImage: !!tokenInfo.image,
+            imageUrl: tokenInfo.image?.substring(0, 60) + '...',
+            hasAttributes: !!(tokenInfo.attributes && tokenInfo.attributes.length > 0),
+            attributesCount: tokenInfo.attributes?.length || 0,
+            assetType: tokenInfo.attributes?.find(attr => attr.trait_type === 'Asset Type')?.value || 'NOT FOUND',
+            allAttributes: tokenInfo.attributes
+          });
+          
+          // SPECIAL CHECK FOR R K industries
+          if (tokenInfo.name && tokenInfo.name.toLowerCase().includes('r k')) {
+            console.log(`🎯 FOUND R K INDUSTRIES TOKEN:`, tokenInfo);
+          }
+          
+        } catch (error) {
+          console.error(`Error processing token ${tokenId}:`, error);
+        }
+      }
+
+      console.log(`✅ MARKETPLACE LISTINGS: Found ${tokens.length} listed tokens for OrderBook`);
+      return tokens;
+      
+    } catch (error) {
+      console.error('❌ Error fetching marketplace listings:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Withdraw tokens from marketplace to user's wallet for OrderBook trading
+   */
+  async withdrawAsset(tokenId: string, amount: number): Promise<boolean> {
+    try {
+      console.log(`🔄 Withdrawing ${amount} of token ${tokenId} from marketplace to wallet...`);
+      
+      if (!this.signer) {
+        throw new Error('Signer required for withdrawal');
+      }
+
+      const marketplaceContract = new ethers.Contract(
+        this.marketplaceAddress,
+        MARKETPLACE_ABI,
+        this.signer
+      );
+
+      // Call withdrawAsset function
+      const tx = await marketplaceContract.withdrawAsset(tokenId, amount);
+      console.log('📤 Withdrawal transaction sent:', tx.hash);
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      console.log('✅ Withdrawal confirmed in block:', receipt.blockNumber);
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error withdrawing asset:', error);
+      throw error;
+    }
+  }
+}
