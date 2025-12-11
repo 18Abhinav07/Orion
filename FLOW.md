@@ -24,55 +24,106 @@
 
 ## 1️⃣ ARCHITECTURE OVERVIEW
 
-### **System Architecture**
+### **System Architecture (Cache-First Pattern)**
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FRONTEND (React + TypeScript)                │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐  │
-│  │ newIssuerDash    │  │ dashboard.tsx    │  │ marketplace  │  │
-│  │ board.tsx        │  │                  │  │ .tsx         │  │
-│  │ (Creator)        │  │ (User Portfolio) │  │ (Licensing)  │  │
-│  └────────┬─────────┘  └────────┬─────────┘  └──────┬───────┘  │
-│           │                     │                    │          │
-│           └─────────────────────┴────────────────────┘          │
-│                                 │                                │
-│                    ┌────────────┴────────────┐                  │
-│                    │ StoryProtocolService.ts │                  │
-│                    │ (Story SDK Wrapper)     │                  │
-│                    └────────────┬────────────┘                  │
-└──────────────────────────────────┼───────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        FRONTEND (React + TypeScript)                        │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐              │
+│  │ newIssuerDash    │  │ dashboard.tsx    │  │ marketplace  │              │
+│  │ board.tsx        │  │                  │  │ .tsx         │              │
+│  │ (Creator)        │  │ (User Portfolio) │  │ (Licensing)  │              │
+│  └────────┬─────────┘  └────────┬─────────┘  └──────┬───────┘              │
+│           │                     │                    │                      │
+│           └─────────────────────┴────────────────────┘                      │
+│                                 │                                           │
+│                    ┌────────────┴────────────┐                              │
+│                    │ StoryProtocolService.ts │                              │
+│                    │ (Story SDK Wrapper)     │                              │
+│                    └────────────┬────────────┘                              │
+└──────────────────────────────────┼────────────────────────────────────────┘
                                    │
                 ┌──────────────────┴──────────────────┐
                 │                                     │
                 ▼                                     ▼
-┌──────────────────────────────────┐  ┌──────────────────────────┐
-│  BACKEND API (Node.js/Express)   │  │  STORY PROTOCOL SDK      │
-│  ┌────────────────────────────┐  │  │  ┌────────────────────┐ │
-│  │ Fingerprint Service        │  │  │  │ mintAndRegisterIp  │ │
-│  │ POST /api/fingerprint      │  │  │  │ AndAttachPILTerms  │ │
-│  │ POST /api/check-similarity │  │  │  │                    │ │
-│  │ GET  /api/assets           │  │  │  │ registerDerivative │ │
-│  │ POST /api/disputes/create  │  │  │  │                    │ │
-│  │ GET  /api/disputes/pending │  │  │  │ mintLicenseTokens  │ │
-│  │ POST /api/disputes/resolve │  │  │  │                    │ │
-│  │ PATCH /api/assets/:hash    │  │  │  │ claimAllRevenue    │ │
-│  └────────────┬───────────────┘  │  │  └────────────────────┘ │
-│               │                   │  │                          │
-│               ▼                   │  └──────────────────────────┘
-│  ┌────────────────────────────┐  │
-│  │ PostgreSQL Database        │  │
-│  │ - ip_fingerprints          │  │
-│  │ - similarity_disputes      │  │
-│  │ - license_tokens           │  │
-│  │ - royalty_claims           │  │
-│  └────────────────────────────┘  │
-└──────────────────────────────────┘
+┌──────────────────────────────────┐  ┌──────────────────────────────────┐
+│  STORY PROTOCOL SDK              │  │  BACKEND API (Node.js/Express)   │
+│  (Called by Frontend)            │  │  (Cache Service)                 │
+│  ┌────────────────────────────┐ │  │  ┌────────────────────────────┐  │
+│  │ mintAndRegisterIp          │ │  │  │ IPFS/Pinata Service        │  │
+│  │ AndAttachPILTerms          │ │  │  │ POST /api/fingerprint      │  │
+│  │                            │ │  │  │ POST /api/check-similarity │  │
+│  │ registerDerivativeIp       │ │  │  │                            │  │
+│  │                            │ │  │  │ Cache Endpoints            │  │
+│  │ mintLicenseTokens          │ │  │  │ POST /api/cache/ip-reg     │  │
+│  │                            │ │  │  │ POST /api/cache/license    │  │
+│  │ claimRevenue               │ │  │  │ POST /api/cache/derivative │  │
+│  │                            │ │  │  │                            │  │
+│  └────────────────────────────┘ │  │  │ Query Endpoints            │  │
+│                                  │  │  │ GET  /api/assets           │  │
+│                                  │  │  │ GET  /api/disputes/pending │  │
+│                                  │  │  │                            │  │
+│  Results sent to Backend ────────┼──┼─▶│ EXCEPTION: Admin Only      │  │
+│  for caching                     │  │  │ POST /api/admin/force-deriv│  │
+│                                  │  │  │ (Backend calls SDK)        │  │
+└──────────────────────────────────┘  │  └────────────┬───────────────┘  │
+                                      │               │                   │
+                                      │               ▼                   │
+                                      │  ┌────────────────────────────┐  │
+                                      │  │ PostgreSQL Database        │  │
+                                      │  │ - ip_fingerprints          │  │
+                                      │  │ - similarity_disputes      │  │
+                                      │  │ - license_tokens           │  │
+                                      │  │ - derivative_relationships │  │
+                                      │  └────────────────────────────┘  │
+                                      └──────────────────────────────────┘
 ```
+
+**🔑 Key Architecture Changes:**
+1. **Frontend → Story SDK:** Direct calls (no backend intermediary)
+2. **Frontend → Backend:** Sends blockchain results for caching
+3. **Backend → IPFS:** Handles all Pinata uploads (fingerprinting)
+4. **Backend → Database:** Stores cached data for fast queries
+5. **⚠️ Exception:** Admin panel calls SDK via backend for forced derivatives
 
 ---
 
 ## 2️⃣ BACKEND API ENDPOINTS
+
+### **Architecture: Cache-First Backend**
+
+**IMPORTANT:** The backend acts as a **cache service** and does NOT directly call Story Protocol SDK (with one exception).
+
+**Architecture Pattern:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Frontend (React + Story SDK)                                │
+│                                                              │
+│  1. User action → Frontend calls Story SDK directly         │
+│  2. Story SDK returns results (ipId, tokenId, txHash, etc.) │
+│  3. Frontend sends results to Backend for caching           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+                        ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Backend (Node.js/Express + PostgreSQL)                      │
+│                                                              │
+│  • Stores blockchain results in database                    │
+│  • Handles IPFS/Pinata uploads (fingerprinting)             │
+│  • Provides cached data for fast queries                    │
+│  • EXCEPTION: Admin can force derivative registration       │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Points:**
+- ✅ Frontend calls `mintAndRegisterIpAndAttachPILTerms()`, `mintLicenseTokens()`, `registerDerivativeIp()` directly
+- ✅ Backend receives and caches the results for future queries
+- ✅ Backend handles ALL IPFS/Pinata interactions (content upload, metadata upload)
+- ✅ Backend provides similarity detection using cached fingerprints
+- ⚠️ **EXCEPTION:** Admin Panel can call Story SDK via backend to force derivative registration (similarity score 70-90%)
+
+---
 
 ### **Complete API Reference**
 
@@ -355,6 +406,251 @@ POST /api/disputes/:disputeId/resolve
 
 ---
 
+#### **E. Story SDK Result Caching**
+
+**IMPORTANT:** These endpoints receive blockchain transaction results FROM the frontend and cache them in the database. The backend does NOT call Story Protocol SDK for these operations.
+
+---
+
+```typescript
+POST /api/cache/ip-registration
+```
+
+**Purpose:** Cache IP registration results after frontend calls `mintAndRegisterIpAndAttachPILTerms()`
+
+**Request:**
+```json
+{
+  "contentHash": "0xabc123...",
+  "ipfsCid": "QmXxx...",
+  "walletAddress": "0x123...",
+  "storyIpId": "0xIP_A...",
+  "tokenId": "1",
+  "licenseTermsId": "55",
+  "txHash": "0xTX_A...",
+  "title": "My Original Song",
+  "ipType": "Text",
+  "commercialRevShare": 1000,
+  "metadata": {
+    "ipMetadataURI": "ipfs://QmXxx...",
+    "ipMetadataHash": "0xMETA..."
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "IP registration cached successfully",
+  "data": {
+    "hash": "0xabc123...",
+    "storyIpId": "0xIP_A...",
+    "status": "registered"
+  }
+}
+```
+
+**Backend Logic:**
+```javascript
+// Update existing fingerprint record with Story Protocol data
+await db.ip_fingerprints.update({
+  hash: contentHash
+}, {
+  story_ip_id: storyIpId,
+  token_id: tokenId,
+  license_terms_id: licenseTermsId,
+  tx_hash: txHash,
+  royalty_rate: commercialRevShare / 100, // Convert basis points to percentage
+  metadata_uri: metadata.ipMetadataURI,
+  metadata_hash: metadata.ipMetadataHash,
+  status: 'registered',
+  registered_at: new Date()
+});
+```
+
+---
+
+```typescript
+POST /api/cache/license-minting
+```
+
+**Purpose:** Cache license token minting results after frontend calls `mintLicenseTokens()`
+
+**Request:**
+```json
+{
+  "parentIpId": "0xIP_A...",
+  "licenseTermsId": "55",
+  "licenseTokenIds": ["1", "2", "3"],
+  "txHash": "0xTX_B...",
+  "mintedBy": "0x456...",
+  "amount": 3
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "License tokens cached successfully",
+  "data": {
+    "parentIpId": "0xIP_A...",
+    "licenseTokenIds": ["1", "2", "3"]
+  }
+}
+```
+
+**Backend Logic:**
+```javascript
+// Store license token records
+for (const tokenId of licenseTokenIds) {
+  await db.license_tokens.insert({
+    license_token_id: tokenId,
+    parent_ip_id: parentIpId,
+    license_terms_id: licenseTermsId,
+    owner_address: mintedBy,
+    tx_hash: txHash,
+    minted_at: new Date()
+  });
+}
+```
+
+---
+
+```typescript
+POST /api/cache/derivative-registration
+```
+
+**Purpose:** Cache derivative IP registration results after frontend calls `registerDerivativeIp()`
+
+**Request:**
+```json
+{
+  "childIpId": "0xIP_B...",
+  "childTokenId": "2",
+  "parentIpIds": ["0xIP_A..."],
+  "licenseTokenIds": ["1"],
+  "txHash": "0xTX_C...",
+  "contentHash": "0xdef456...",
+  "walletAddress": "0x789...",
+  "royaltySplit": {
+    "parent": 10,
+    "child": 90
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Derivative registration cached successfully",
+  "data": {
+    "childIpId": "0xIP_B...",
+    "parentIpIds": ["0xIP_A..."],
+    "status": "registered_derivative"
+  }
+}
+```
+
+**Backend Logic:**
+```javascript
+// Update fingerprint with derivative status
+await db.ip_fingerprints.update({
+  hash: contentHash
+}, {
+  story_ip_id: childIpId,
+  token_id: childTokenId,
+  tx_hash: txHash,
+  status: 'registered_derivative',
+  parent_ip_ids: parentIpIds,
+  license_token_ids: licenseTokenIds,
+  royalty_split: royaltySplit,
+  registered_at: new Date()
+});
+
+// Create derivative relationship record
+await db.derivative_relationships.insert({
+  child_ip_id: childIpId,
+  parent_ip_id: parentIpIds[0],
+  license_token_id: licenseTokenIds[0],
+  parent_royalty_percent: royaltySplit.parent,
+  child_royalty_percent: royaltySplit.child,
+  created_at: new Date()
+});
+```
+
+---
+
+#### **F. Admin-Only: Force Derivative Registration (Backend SDK Call)**
+
+**⚠️ EXCEPTION:** This is the ONLY endpoint where the backend calls Story Protocol SDK directly.
+
+```typescript
+POST /api/admin/force-derivative
+```
+
+**Purpose:** Admin forces derivative registration for content with similarity score 70-90%
+
+**Request:**
+```json
+{
+  "disputeId": "dispute_123",
+  "childNftContract": "0xNFT_B...",
+  "childTokenId": "2",
+  "parentIpIds": ["0xIP_A..."],
+  "licenseTokenIds": ["1"],
+  "adminPrivateKey": "0xADMIN_KEY...",
+  "resolution": "enforced_derivative"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Derivative forcibly registered by admin",
+  "data": {
+    "childIpId": "0xIP_B...",
+    "txHash": "0xTX_ADMIN...",
+    "parentIpIds": ["0xIP_A..."]
+  }
+}
+```
+
+**Backend Logic (ONLY PLACE BACKEND CALLS SDK):**
+```javascript
+// Backend calls Story Protocol SDK
+const txHash = await client.ipAsset.registerDerivativeIp({
+  childIpId: childNftContract,
+  parentIpIds: parentIpIds,
+  licenseTokenIds: licenseTokenIds,
+  txOptions: { waitForTransaction: true }
+});
+
+// Update dispute status
+await db.disputes.update({
+  dispute_id: disputeId
+}, {
+  status: 'resolved',
+  resolution: 'enforced_derivative',
+  resolved_by: adminAddress,
+  resolved_at: new Date()
+});
+
+// Cache the derivative registration
+await db.ip_fingerprints.update({
+  hash: contentHash
+}, {
+  status: 'registered_derivative',
+  parent_ip_ids: parentIpIds,
+  tx_hash: txHash
+});
+```
+
+---
+
 ## 3️⃣ STORY PROTOCOL SDK FUNCTIONS
 
 ### **Combined Functions (Recommended)**
@@ -562,8 +858,8 @@ sequenceDiagram
     SP-->>FE: 23. Return { ipId, tokenId, licenseTermsId, txHash }
     deactivate SP
 
-    FE->>API: 24. PATCH /api/assets/:hash/update
-    Note right of API: Body: { storyIpId, tokenId, licenseTermsId, status='registered' }
+    FE->>API: 24. POST /api/cache/ip-registration
+    Note right of API: Cache blockchain results<br/>Body: { contentHash, ipfsCid, walletAddress, storyIpId,<br/>tokenId, licenseTermsId, txHash, title, ipType,<br/>commercialRevShare, metadata }
 
     activate API
     API->>DB: 25. UPDATE ip_fingerprints SET story_ip_id, status='registered'
@@ -575,10 +871,12 @@ sequenceDiagram
 ```
 
 **Key Points:**
-- **Line 19:** Uses **combined function** `mintAndRegisterIpAndAttachPILTerms()` instead of 3 separate calls
-- **Backend APIs:** `/api/fingerprint`, `/api/check-similarity`, `/api/assets/:hash/update`
+- **Line 19:** Frontend calls `mintAndRegisterIpAndAttachPILTerms()` directly (no backend intermediary)
+- **Line 24:** Frontend sends blockchain results to backend for caching via `/api/cache/ip-registration`
+- **Backend APIs:** `/api/fingerprint` (IPFS), `/api/check-similarity`, `/api/cache/ip-registration`
 - **Story SDK:** Single transaction for minting + registration + licensing
 - **Database:** Stores hash, IPFS CID, Story IP ID for future similarity checks
+- **Cache-First:** Backend stores blockchain results sent from frontend
 
 ---
 
@@ -693,22 +991,27 @@ sequenceDiagram
     SP->>SP: Mint NFT for Bob's derivative
     SP->>SP: Link bobIpId → aliceIpId
     SP->>SP: Set up royalty flow (Alice gets 10%, Bob gets 90%)
-    SP-->>FE: Return { ipId: bobIpId, txHash }
+    SP-->>FE: Return { ipId: bobIpId, tokenId, txHash }
     deactivate SP
 
-    FE->>API: PATCH /api/assets/:hash/update
-    Note right of API: Body: { storyIpId: bobIpId, isDerivative: true,<br/>parentIpId: aliceIpId, status: 'registered' }
+    FE->>API: POST /api/cache/derivative-registration
+    Note right of API: Cache derivative results<br/>Body: { childIpId: bobIpId, childTokenId, parentIpIds: [aliceIpId],<br/>licenseTokenIds, txHash, contentHash, walletAddress,<br/>royaltySplit: { parent: 10, child: 90 } }
 
+    activate API
+    API->>DB: UPDATE ip_fingerprints & INSERT into derivative_relationships
     API-->>FE: Return { success: true }
+    deactivate API
 
     FE-->>Bob: ✅ Success! Derivative Registered & Linked to Parent
     Note right of Bob: When Bob earns revenue, Alice automatically gets her 10%
 ```
 
 **Key Points:**
-- **Line 18:** Uses `registerDerivativeIp()` function
+- Frontend calls `registerDerivativeIp()` directly (no backend intermediary)
+- Frontend sends derivative results to backend via `/api/cache/derivative-registration`
 - **Automatic Royalty Flow:** Story Protocol handles royalty splitting on-chain
 - **Parent Attribution:** On-chain link from Bob's IP to Alice's IP
+- Backend caches derivative relationship for future queries
 
 ---
 
@@ -718,18 +1021,18 @@ sequenceDiagram
 
 ---
 
-### **FETCH USER PORTFOLIO FLOW**
+### **FETCH USER PORTFOLIO FLOW (Cache-First)**
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as 👤 User
     participant FE as 🖥️ Frontend
-    participant API as ⚙️ Backend API
+    participant API as ⚙️ Backend API (Cache)
     participant SP as ⚡ Story Protocol SDK
     participant IPFS as 📦 IPFS
 
-    Note over User, IPFS: USER PORTFOLIO VIEW
+    Note over User, IPFS: USER PORTFOLIO VIEW (Cache-First)
 
     User->>FE: Visit Dashboard page
     activate FE
@@ -737,30 +1040,35 @@ sequenceDiagram
     FE->>FE: useEffect() → fetchUserPortfolio()
 
     FE->>API: GET /api/assets?walletAddress=0x...
-    Note right of API: Query params: walletAddress
+    Note right of API: Query cached data from database
 
     activate API
     API->>API: Query ip_fingerprints WHERE wallet_address
-    API-->>FE: Return registered IP assets
+    API-->>FE: Return cached IP assets with Story metadata
     deactivate API
-    Note right of FE: Returns: [{ hash, ipfsCid, storyIpId, title, royaltyRate, ... }]
+    Note right of FE: Returns: [{ hash, ipfsCid, storyIpId, tokenId,<br/>title, royaltyRate, licenseTermsId, txHash, ... }]
 
-    loop For each IP asset
-        FE->>SP: client.ipAsset.ipAsset(ipId)
-        Note right of SP: Fetch on-chain IP details
+    alt Backend has complete cached data
+        FE->>FE: Display portfolio from cache (fast!)
+        Note right of FE: No blockchain calls needed for basic view
+    else Need additional on-chain data (optional)
+        loop For each IP asset (if needed)
+            FE->>SP: client.ipAsset.ipAsset(ipId)
+            Note right of SP: Fetch fresh on-chain IP details
 
-        activate SP
-        SP-->>FE: Return { owner, tokenContract, tokenId, resolver }
-        deactivate SP
+            activate SP
+            SP-->>FE: Return { owner, tokenContract, tokenId, resolver }
+            deactivate SP
 
-        FE->>IPFS: Fetch metadata from ipfsCid
-        IPFS-->>FE: Return { title, description, attributes }
+            FE->>IPFS: Fetch metadata from ipfsCid
+            IPFS-->>FE: Return { title, description, attributes }
 
-        FE->>FE: Merge backend + on-chain + IPFS data
+            FE->>FE: Merge cached + on-chain + IPFS data
+        end
     end
 
     FE->>SP: client.royalty.getClaimableRevenue(ipId, currency)
-    Note right of SP: Check if user has claimable royalties
+    Note right of SP: Check real-time claimable royalties
 
     activate SP
     SP-->>FE: Return { claimableRevenue: bigint }
@@ -773,6 +1081,12 @@ sequenceDiagram
     deactivate FE
     Note right of User: Shows: Registered IPs, Owned Licenses,<br/>Royalty Income, Transaction History
 ```
+
+**🔑 Key Architecture Change:**
+- **Cache-First:** Backend provides all cached Story Protocol data (ipId, tokenId, licenseTermsId, txHash)
+- **Fast Loading:** Basic portfolio view loads from cache without blockchain calls
+- **Selective On-Chain:** Frontend only queries blockchain for real-time data (claimable royalties, fresh ownership)
+- **Reduced Latency:** Eliminates slow blockchain queries for every page load
 
 ---
 
@@ -817,17 +1131,17 @@ sequenceDiagram
 
 ---
 
-### **FETCH AVAILABLE IPS FLOW**
+### **FETCH AVAILABLE IPS FLOW (Cache-First)**
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as 👤 User
     participant FE as 🖥️ Frontend
-    participant API as ⚙️ Backend API
+    participant API as ⚙️ Backend API (Cache)
     participant SP as ⚡ Story Protocol SDK
 
-    Note over User, SP: MARKETPLACE - FETCH AVAILABLE IPs
+    Note over User, SP: MARKETPLACE - FETCH AVAILABLE IPs (Cache-First)
 
     User->>FE: Visit Marketplace page
     activate FE
@@ -835,27 +1149,31 @@ sequenceDiagram
     FE->>FE: useEffect() → loadAvailableIPs()
 
     FE->>API: GET /api/marketplace/available-ips
-    Note right of API: Optional filters: ipType, minRoyalty, maxRoyalty
+    Note right of API: Query cached data<br/>Optional filters: ipType, minRoyalty, maxRoyalty
 
     activate API
     API->>API: Query ip_fingerprints WHERE status='registered'
-    API-->>FE: Return available IP listings
+    API-->>FE: Return cached available IP listings
     deactivate API
-    Note right of FE: Returns: [{ storyIpId, title, royaltyRate,<br/>licenseTermsId, ipfsCid, creator, ... }]
+    Note right of FE: Returns: [{ storyIpId, title, royaltyRate,<br/>licenseTermsId, ipfsCid, creator, tokenId, ... }]
 
-    loop For each IP listing
-        FE->>SP: client.license.licenseTerms(licenseTermsId)
-        Note right of SP: Fetch license terms details
+    alt Need fresh license terms (optional)
+        loop For each IP listing (if needed)
+            FE->>SP: client.license.licenseTerms(licenseTermsId)
+            Note right of SP: Fetch on-chain license terms
 
-        activate SP
-        SP-->>FE: Return { commercialUse, derivativesAllowed,<br/>commercialRevShare, mintingFee, currency }
-        deactivate SP
+            activate SP
+            SP-->>FE: Return { commercialUse, derivativesAllowed,<br/>commercialRevShare, mintingFee, currency }
+            deactivate SP
+        end
     end
 
-    FE->>FE: Filter & sort listings
+    FE->>FE: Filter & sort listings from cache
     FE-->>User: Display Marketplace listings
     deactivate FE
     Note right of User: Shows: IP cards with title, image,<br/>royalty %, license type, mint button
+
+    Note over FE: Cache-First: Most data loaded from backend,<br/>blockchain only for fresh license terms if needed
 ```
 
 ---
@@ -893,8 +1211,8 @@ sequenceDiagram
     SP-->>FE: Return { licenseTokenIds: [101], txHash }
     deactivate SP
 
-    FE->>API: POST /api/licenses/record
-    Note right of API: Body: { licenseTokenId, ipId, licensee, mintedAt }
+    FE->>API: POST /api/cache/license-minting
+    Note right of API: Cache license mint results<br/>Body: { parentIpId: ipId, licenseTermsId,<br/>licenseTokenIds: [101], txHash, mintedBy: userAddress, amount: 1 }
 
     activate API
     API->>API: INSERT into license_tokens table
@@ -905,11 +1223,14 @@ sequenceDiagram
     deactivate FE
 
     Note over User: User now has permission to use IP<br/>according to license terms
+
+    Note over FE: Frontend calls SDK directly,<br/>then sends results to backend for caching
 ```
 
-**Key Difference from Flow Blockchain:**
+**Key Differences:**
 - **OLD (Flow):** `buyToken()` → User owns ERC1155 token fractions
 - **NEW (Story):** `mintLicenseTokens()` → User owns LICENSE to use IP (not the IP itself)
+- **Architecture:** Frontend calls `mintLicenseTokens()` directly, then caches results via `/api/cache/license-minting`
 
 ---
 
@@ -963,7 +1284,7 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     actor Admin as ⚖️ Admin
-    participant FE as 🖥️ Frontend
+    participant FE as 🖥️ Frontend (Admin UI)
     participant API as ⚙️ Backend API
     participant SP as ⚡ Story Protocol SDK
 
@@ -978,15 +1299,26 @@ sequenceDiagram
 
     activate API
     API->>API: UPDATE similarity_disputes SET status='approved_as_original'
-    API-->>FE: Return { success: true }
+    API-->>FE: Return { success: true, requiresRegistration: true }
     deactivate API
 
+    FE->>Admin: Prompt: "Register Bob's content as Original IP?"
+    Admin->>FE: Confirms
+
     FE->>SP: mintAndRegisterIpAndAttachPILTerms()
-    Note right of SP: Register Bob's content as ORIGINAL<br/>(no link to parent)
+    Note right of SP: Frontend calls SDK directly<br/>Register Bob's content as ORIGINAL (no link to parent)
 
     activate SP
-    SP-->>FE: Return { ipId, tokenId, licenseTermsId }
+    SP-->>FE: Return { ipId, tokenId, licenseTermsId, txHash }
     deactivate SP
+
+    FE->>API: POST /api/cache/ip-registration
+    Note right of API: Cache the registration results
+
+    activate API
+    API->>API: UPDATE ip_fingerprints with Story metadata
+    API-->>FE: Return { success: true }
+    deactivate API
 
     FE-->>Admin: ✅ Dispute resolved - Registered as Original
     deactivate FE
@@ -1002,32 +1334,34 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     actor Admin as ⚖️ Admin
-    participant FE as 🖥️ Frontend
+    participant FE as 🖥️ Frontend (Admin UI)
     participant API as ⚙️ Backend API
     participant SP as ⚡ Story Protocol SDK
 
-    Note over Admin, SP: ADMIN RESOLVES - ENFORCE DERIVATIVE
+    Note over Admin, SP: ADMIN RESOLVES - ENFORCE DERIVATIVE<br/>⚠️ EXCEPTION: Backend calls SDK directly
 
     Admin->>FE: Review Dispute #123 (Score: 78%)
     Admin->>FE: Click "Enforce Derivative Link"
 
     activate FE
-    FE->>API: POST /api/disputes/dispute_123/resolve
-    Note right of API: Body: { resolution: 'enforced_derivative',<br/>adminAddress, notes: 'Clear similarity' }
+    FE->>API: POST /api/admin/force-derivative
+    Note right of API: Body: { disputeId: 'dispute_123', childNftContract,<br/>childTokenId, parentIpIds: [aliceIpId], licenseTokenIds,<br/>adminPrivateKey, resolution: 'enforced_derivative' }
 
     activate API
     API->>API: UPDATE similarity_disputes SET status='enforced_derivative'
 
-    API->>SP: registerDerivativeIp() (Using admin wallet)
-    Note right of SP: childIpId: Bob's pending IP,<br/>parentIpIds: [Alice's IP],<br/>licenseTermsIds: [Alice's terms]
+    Note over API, SP: ⚠️ EXCEPTION: Backend calls Story SDK<br/>(Only place where backend calls SDK)
+    API->>SP: client.ipAsset.registerDerivativeIp()
+    Note right of SP: childIpId: Bob's pending IP,<br/>parentIpIds: [Alice's IP],<br/>licenseTokenIds: [Alice's license]
 
     activate SP
     SP->>SP: Link Bob's IP → Alice's IP
-    SP->>SP: Set up royalty flow
+    SP->>SP: Set up royalty flow (Alice 10%, Bob 90%)
     SP-->>API: Return { txHash }
     deactivate SP
 
-    API-->>FE: Return { success: true, txHash }
+    API->>API: Cache derivative registration in database
+    API-->>FE: Return { success: true, childIpId: bobIpId, txHash }
     deactivate API
 
     FE-->>Admin: ✅ Derivative link enforced
@@ -1036,10 +1370,13 @@ sequenceDiagram
     Note over Admin: Bob's content is now registered<br/>as derivative with automatic royalties to Alice
 ```
 
-**Key Points:**
-- **Admin Wallet:** Backend has admin private key for enforcement actions
-- **Gas Fees:** Admin pays gas for enforcement
+**🔑 Key Points - EXCEPTION CASE:**
+- **⚠️ ONLY EXCEPTION:** This is the ONLY flow where backend calls Story Protocol SDK directly
+- **Admin Enforcement:** Backend uses `/api/admin/force-derivative` endpoint with admin private key
+- **Gas Fees:** Admin pays gas for enforcement via backend wallet
 - **On-Chain Enforcement:** Cannot be reversed by Bob
+- **Automatic Caching:** Backend stores derivative relationship after registration
+- **Why Backend?** Admin enforcement requires server-side key management for security
 
 ---
 
