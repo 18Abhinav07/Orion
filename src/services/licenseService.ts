@@ -53,7 +53,8 @@ export async function getLicenseTermsId(
   // Register new terms
   console.log(`⚙️ Registering license terms: ${licenseType} ${royaltyPercent}%`);
   
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+  await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
   const registry = new ethers.Contract(
     LICENSE_REGISTRY_ADDRESS,
@@ -116,7 +117,9 @@ export async function attachLicenseTermsToIp(
   licenseTermsId: string
 ): Promise<{ txHash: string }> {
   
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  // Use the existing provider that's already connected to the correct network
+  const provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+  await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
   
   const contract = new ethers.Contract(

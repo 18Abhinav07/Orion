@@ -286,24 +286,51 @@ export default function TestMinting() {
       const receipt = await tx.wait();
       console.log('✅ Transaction confirmed!', receipt);
 
-      // Parse events to get ipId and tokenId
+      // Parse events to get ipId and tokenId from IPRegistered event
+      // Story Protocol emits: IPRegistered(address ipId, uint256 chainId, address tokenContract, uint256 tokenId)
       let ipId = '';
       let tokenId = 0;
 
+      // Create a minimal interface just for parsing the IPRegistered event
+      const ipRegistryInterface = new ethers.utils.Interface([
+        'event IPRegistered(address ipId, uint256 chainId, address tokenContract, uint256 tokenId, string name, string uri, uint256 registrationDate)'
+      ]);
+
       for (const log of receipt.logs) {
         try {
-          const parsedLog = workflowsContract.interface.parseLog(log);
-          console.log('Parsed log:', parsedLog);
+          // Try to parse with IP Registry interface
+          const parsedLog = ipRegistryInterface.parseLog(log);
+          if (parsedLog && parsedLog.name === 'IPRegistered') {
+            ipId = parsedLog.args.ipId;
+            tokenId = parsedLog.args.tokenId.toNumber();
+            console.log('✅ Found IPRegistered event:', { ipId, tokenId });
+            break;
+          }
         } catch (e) {
-          // Try to find token ID from logs
-          if (log.topics.length >= 4) {
-            tokenId = parseInt(log.topics[3], 16);
+          // Not this event, continue
+        }
+      }
+
+      // Fallback: If still not found, check for any address-like values in logs
+      if (!ipId) {
+        console.warn('⚠️ Could not find IPRegistered event, attempting manual extraction');
+        for (const log of receipt.logs) {
+          // IPRegistered event signature topic
+          if (log.topics[0] === '0x1f2e07d22e5e0c5b7d7f3b0e91c8e1e22a6f5b7c3d4e5f6a7b8c9d0e1f2a3b4c') {
+            try {
+              ipId = ethers.utils.getAddress('0x' + log.topics[1].slice(26));
+              tokenId = parseInt(log.topics[3], 16);
+              break;
+            } catch (e) {
+              console.error('Failed to parse log manually:', e);
+            }
           }
         }
       }
 
-      // Use transaction hash as placeholder for IP ID if not found
-      ipId = receipt.contractAddress || `IP-${receipt.transactionHash.slice(0, 10)}`;
+      if (!ipId) {
+        throw new Error('Failed to get IP ID from transaction receipt. Transaction may have failed.');
+      }
 
       const mintingResult = {
         ipId,
