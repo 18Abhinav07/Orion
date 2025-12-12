@@ -3,6 +3,7 @@ import express from 'express';
 const router = express.Router();
 import { ethers } from 'ethers';
 import MintToken from '../models/MintToken.js';
+import LicenseToken from '../models/LicenseToken.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -203,6 +204,73 @@ router.patch('/token/:nonce/update', async (req, res) => {
     
   } catch (error) {
     console.error('Error updating token:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message }
+    });
+  }
+});
+
+// Get all registered IP assets for a user
+router.get('/user/:address/assets', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    if (!address) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_ADDRESS', message: 'User address is required' }
+      });
+    }
+
+    // Fetch all assets for this user that have been successfully minted
+    const assets = await MintToken.find({
+      creatorAddress: address.toLowerCase(),
+      status: 'used',
+      ipId: { $exists: true, $ne: null }
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      assets: assets,
+      count: assets.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching user assets:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message }
+    });
+  }
+});
+
+// Get license tokens minted by a user
+router.get('/license-tokens/user/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    if (!address) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_ADDRESS', message: 'User address is required' }
+      });
+    }
+
+    // Fetch all license tokens minted by this user
+    const licenseTokens = await LicenseToken.find({
+      licenseeAddress: address.toLowerCase(),
+      status: 'minted'
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      licenseTokens: licenseTokens,
+      count: licenseTokens.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching license tokens:', error);
     res.status(500).json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: error.message }
