@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/marketplace/marketplace";
+import NewMarketplace from "./pages/marketplace/NewMarketplace";
 import Admin from "./pages/admin/admin";
 import Issuer from "./pages/Issuer/issuer";
 import NewIssuerDashboard from "./pages/Issuer/newIssuerDashboard";
@@ -85,6 +86,12 @@ const App = () => {
               />
               <Route 
                 path="/marketplace" 
+                element={
+                    <NewMarketplace />
+                } 
+              />
+              <Route 
+                path="/testmarketplace" 
                 element={
                     <Marketplace />
                 } 

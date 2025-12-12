@@ -6,9 +6,9 @@
 export const STORY_PROTOCOL_CONFIG = {
   // Story Aeined Testnet
   STORY_AEINED_TESTNET: {
-    chainId: 1513, // Story Aeined Testnet Chain ID
+    chainId: 1315, // Story Aeined Testnet Chain ID
     name: 'Story Aeined Testnet',
-    rpcUrl: 'https://testnet.storyrpc.io',
+    rpcUrl: 'https://aeneid.storyrpc.io',
     blockExplorer: 'https://testnet.storyscan.xyz',
     nativeCurrency: {
       name: 'IP',
@@ -92,7 +92,7 @@ export type IPType = typeof IP_TYPES[number];
  * Utility: Check if Story Protocol network is configured
  */
 export const isStoryProtocolConfigured = (): boolean => {
-  return STORY_CONFIG.chainId === 1513 &&
+  return STORY_CONFIG.chainId === 1315 &&
          STORY_CONTRACTS.IP_ASSET_REGISTRY.length > 0;
 };
 

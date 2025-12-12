@@ -50,7 +50,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   // ❌ OLD: Flow blockchain chain ID (747)
   // const requiredChainId = NETWORK_CONFIG[ACTIVE_NETWORK].chainId;
 
-  // ✅ NEW: Story Aeined Testnet chain ID (1513)
+  // ✅ NEW: Story Aeined Testnet chain ID (1315)
   const requiredChainId = STORY_CONFIG.chainId;
   const isCorrectNetwork = chainId === requiredChainId;
 
@@ -70,7 +70,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         // Try to switch to Story Aeined Testnet
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: `0x${networkConfig.chainId.toString(16)}` }], // 0x5e9 = 1513
+          params: [{ chainId: `0x${networkConfig.chainId.toString(16)}` }], // 0x523 = 1315
         });
         return true;
       } catch (switchError: any) {
@@ -80,10 +80,10 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
               params: [{
-                chainId: `0x${networkConfig.chainId.toString(16)}`, // 0x5e9 = 1513
+                chainId: `0x${networkConfig.chainId.toString(16)}`, // 0x523 = 1315
                 chainName: networkConfig.name, // "Story Aeined Testnet"
                 nativeCurrency: networkConfig.nativeCurrency, // { name: "IP", symbol: "IP", decimals: 18 }
-                rpcUrls: [networkConfig.rpcUrl], // https://testnet.storyrpc.io
+                rpcUrls: [networkConfig.rpcUrl], // https://aeneid.storyrpc.io
                 blockExplorerUrls: [networkConfig.blockExplorer] // https://testnet.storyscan.xyz
               }],
             });
