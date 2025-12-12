@@ -84,6 +84,10 @@ import { fetchTokenPrice, formatPriceInUSD } from '../../utils/priceService';
 import TokenStatusCard from '../../components/invoice-financing/investor/TokenStatusCard';
 import PortfolioSettlements from '../../components/invoice-financing/investor/PortfolioSettlements';
 
+// Story Protocol IP Assets
+import { useUserAssets } from '../../hooks/useUserAssets';
+import { AssetCard } from '../../components/AssetCard';
+
 // Mock data for sections not yet converted to real data
 const MOCK_INCOME_HISTORY = [
   { date: "2024-03-01", asset: "Manhattan Luxury Apartment", amount: 1850, type: "Rental" },
@@ -285,7 +289,8 @@ const Dashboard: React.FC = () => {
   const currentUser = profileData || user;
   
   // IP-OPS states
-  const [registeredIpAssets, setRegisteredIpAssets] = useState<IPAsset[]>([]);
+  const [registeredIPAssets, setRegisteredIPAssets] = useState<IPAsset[]>([]);
+  const [loadingRegisteredAssets, setLoadingRegisteredAssets] = useState(false);
   const [ownedLicenses, setOwnedLicenses] = useState<LicenseToken[]>([]);
   const [ipPortfolioData, setIpPortfolioData] = useState({
     totalIPs: 0,
@@ -297,8 +302,38 @@ const Dashboard: React.FC = () => {
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]); // Keep for now, will need a new type
   const [notifications, setNotifications] = useState<any[]>([]); // Keep for now, will need a new type
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [userAssets, setUserAssets] = useState<UserAsset[]>([]);
+  const [portfolioData, setPortfolioData] = useState<PortfolioData>({
+    totalInvestment: 0,
+    currentValue: 0,
+    totalReturn: 0,
+    returnPercentage: 0,
+    monthlyIncome: 0,
+    totalAssets: 0,
+    activeInvestments: 0
+  });
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: LoadingState }>({
+    assets: { isLoading: false, isFromCache: false },
+    portfolio: { isLoading: false, isFromCache: false },
+    transactions: { isLoading: false, isFromCache: false },
+    notifications: { isLoading: false, isFromCache: false }
+  });
 
+  // Modal states for selling assets
+  const [sellModalOpen, setSellModalOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<UserAsset | null>(null);
+  const [sellAmount, setSellAmount] = useState('');
+  const [sellLoading, setSellLoading] = useState(false);
+  const [selectedTokenForTrading, setSelectedTokenForTrading] = useState<any>(null);
+  const [selectedAssetForDetails, setSelectedAssetForDetails] = useState<UserAsset | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [transactionLoading, setTransactionLoading] = useState(false);
+  const [secondaryMarketOpen, setSecondaryMarketOpen] = useState(false);
 
+  // Backend API - Fetch user's minted IP assets from database
+  const { data: backendAssets, isLoading: backendAssetsLoading, error: backendAssetsError } = useUserAssets({
+    walletAddress: address as string
+  });
 
   // Function to update loading states
   const updateLoadingState = (
@@ -2512,24 +2547,61 @@ const Dashboard: React.FC = () => {
       case 'portfolio':
         return (
           <div className="space-y-6">
-            {/* Registered IP Assets Section */}
-            {registeredIPAssets.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                      <Award className="w-5 h-5 mr-2 text-green-600" />
-                      My Registered IP Assets
-                    </h2>
-                    <p className="text-sm text-gray-600 mt-1">IP assets you've registered on Story Protocol</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
-                    {registeredIPAssets.length} Registered
-                  </Badge>
+            {/* Registered IP Assets Section - Backend API Primary, LocalStorage Fallback */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                    <Award className="w-5 h-5 mr-2 text-green-600" />
+                    My Registered IP Assets
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">IP assets you've registered on Story Protocol</p>
                 </div>
+                {/* Show backend summary if available, otherwise localStorage count */}
+                {backendAssets && backendAssets.assets.length > 0 ? (
+                  <div className="flex gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                      {backendAssets.summary.total} Total
+                    </Badge>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1">
+                      {backendAssets.summary.minted} Minted
+                    </Badge>
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 px-3 py-1">
+                      {backendAssets.summary.pending} Pending
+                    </Badge>
+                  </div>
+                ) : registeredIPAssets.length > 0 && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                    {registeredIPAssets.length} Local
+                  </Badge>
+                )}
+              </div>
 
+              {/* Backend API Loading State */}
+              {backendAssetsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading your registered IP assets from backend...</p>
+                </div>
+              ) : backendAssets && backendAssets.assets.length > 0 ? (
+                // PRIMARY: Show backend API assets using AssetCard
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {registeredIPAssets.map((asset: any, index: number) => (
+                  {backendAssets.assets.map((asset) => (
+                    <AssetCard key={asset._id} asset={asset} />
+                  ))}
+                </div>
+              ) : backendAssetsError && registeredIPAssets.length > 0 ? (
+                // FALLBACK: Show localStorage assets if API fails
+                <>
+                  <Card className="border border-yellow-200 bg-yellow-50 mb-4">
+                    <CardContent className="p-4">
+                      <p className="text-yellow-800 text-sm">
+                        ⚠️ Backend API unavailable. Showing cached assets from localStorage.
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {registeredIPAssets.map((asset: any, index: number) => (
                     <Card key={asset.ipId || index} className="border border-green-200 shadow-sm hover:shadow-md transition-shadow">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
@@ -2595,8 +2667,29 @@ const Dashboard: React.FC = () => {
                     </Card>
                   ))}
                 </div>
-              </div>
-            )}
+                </>
+              ) : (
+                // EMPTY STATE: No backend or localStorage assets
+                <Card className="border border-dashed border-gray-300">
+                  <CardContent className="text-center py-12">
+                    <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No IP Assets Registered Yet</h3>
+                    <p className="text-gray-600 mb-4">
+                      {backendAssetsError
+                        ? 'Backend API unavailable and no local cache found. Try again later or register new assets.'
+                        : 'Register your first IP asset on Story Protocol to get started.'}
+                    </p>
+                    <Button
+                      onClick={() => window.location.href = '/issuer'}
+                      variant="default"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Register IP Asset
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
             {/* Owned Assets Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2783,6 +2876,76 @@ const Dashboard: React.FC = () => {
 
       case 'income':
         return <YieldIncomeReport />;
+
+      case 'my-ips':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">My Registered IP Assets</h1>
+                <p className="text-gray-600 mt-1">IP assets you've registered on Story Protocol</p>
+              </div>
+              {backendAssets && backendAssets.assets.length > 0 && (
+                <div className="flex gap-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                    {backendAssets.summary.total} Total
+                  </Badge>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1">
+                    {backendAssets.summary.minted} Minted
+                  </Badge>
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 px-3 py-1">
+                    {backendAssets.summary.pending} Pending
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {backendAssetsLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading your registered IP assets...</p>
+              </div>
+            ) : backendAssets && backendAssets.assets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {backendAssets.assets.map((asset) => (
+                  <AssetCard key={asset._id} asset={asset} />
+                ))}
+              </div>
+            ) : backendAssetsError ? (
+              <Card className="border border-red-200 bg-red-50">
+                <CardContent className="p-12 text-center">
+                  <Award className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Assets</h3>
+                  <p className="text-red-600 mb-4">Error: {backendAssetsError.message}</p>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="outline"
+                  >
+                    Retry
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border border-dashed border-gray-300">
+                <CardContent className="text-center py-12">
+                  <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No IP Assets Registered Yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    Register your first IP asset on Story Protocol to get started.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/issuer')}
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Award className="w-4 h-4 mr-2" />
+                    Register IP Asset
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        );
 
       case 'transactions':
         return (
@@ -4218,3 +4381,11 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+function setLoadingStates(arg0: (prev: any) => any) {
+  throw new Error('Function not implemented.');
+}
+function setUserAssets(arg0: undefined[]) {
+  throw new Error('Function not implemented.');
+}
+
