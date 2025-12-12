@@ -5,9 +5,23 @@
  */
 
 import { StoryClient, StoryConfig } from '@story-protocol/core-sdk';
-import { Address, http, createPublicClient, createWalletClient, custom } from 'viem';
+import { Address, http, createPublicClient, createWalletClient, custom, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { STORY_CONFIG, STORY_CONTRACTS, DEFAULT_LICENSE_TERMS } from '../lib/storyProtocolConfig';
+
+// Define Story Aeneid Testnet chain for viem
+const storyAeneidTestnet = defineChain({
+  id: 1315,
+  name: 'Story Aeneid Testnet',
+  nativeCurrency: { name: 'IP', symbol: 'IP', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://aeneid.storyrpc.io'] }
+  },
+  blockExplorers: {
+    default: { name: 'Story Explorer', url: 'https://testnet.storyscan.xyz' }
+  },
+  testnet: true
+});
 
 // ============================================
 // TYPE DEFINITIONS
@@ -75,13 +89,13 @@ export class StoryProtocolService {
       // Create viem wallet client from MetaMask
       this.walletClient = createWalletClient({
         account: address,
-        chain: odyssey, // Story Aeined Testnet
+        chain: storyAeneidTestnet,
         transport: custom(window.ethereum)
       });
 
       // Create public client for read operations
       this.publicClient = createPublicClient({
-        chain: odyssey,
+        chain: storyAeneidTestnet,
         transport: http(STORY_CONFIG.rpcUrl)
       });
 
@@ -89,7 +103,7 @@ export class StoryProtocolService {
       const config: StoryConfig = {
         account: this.walletClient.account,
         transport: http(STORY_CONFIG.rpcUrl),
-        chainId: 'odyssey' // Story Aeined Testnet
+        chainId: 'aeneid' // Story Aeneid Testnet
       };
 
       this.client = StoryClient.newClient(config);

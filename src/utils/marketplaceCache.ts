@@ -21,6 +21,10 @@ export const MARKETPLACE_CACHE_CONFIG = {
 };
 
 // Types for marketplace caching
+import { LicensedIp } from '../services/marketplaceService';
+
+// ...
+
 export interface MarketplaceListing {
   tokenId: string;
   name: string;
@@ -38,6 +42,7 @@ export interface MarketplaceListing {
   }>;
   type?: string;
   category?: string;
+  license?: LicensedIp;
 }
 
 export interface AssetMetadata {

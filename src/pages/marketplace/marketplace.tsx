@@ -26,6 +26,13 @@ import { getCategoryFallbackImage, getUniqueAssetImage, getDeterministicAssetIma
 import { CachedImage } from '../../components/CachedImage';
 import { imageCacheService } from '../../services/imageCacheService';
 import { marketplaceCache, MarketplaceListing } from '../../utils/marketplaceCache';
+import HeroBackground from '../../components/HeroBackground';
+import { FeaturedPropertiesCarousel } from '../../components/marketplace/FeaturedPropertiesCarousel';
+import { ProfessionalListingsGrid } from '../../components/marketplace/ProfessionalListingsGrid';
+import { ProfessionalExpandedDetail } from '../../components/marketplace/ProfessionalExpandedDetail';
+import { LicenseMintingModal } from '../../components/marketplace/LicenseMintingModal';
+import { marketplaceService } from '../../services/marketplaceService';
+import { licenseTokenService } from '../../services/licenseTokenService';
 
 // Alternative RPC endpoints for Flow
 const FLOW_RPC_URLS = [
@@ -94,6 +101,69 @@ interface MarketplaceResponse {
 }
 
 const Marketplace: React.FC = () => {
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
+  const [showDetails, setShowDetails] = useState<MarketplaceListing | null>(null);
+  const [showLicenseMintingModal, setShowLicenseMintingModal] = useState(false);
+  const [selectedListingForLicense, setSelectedListingForLicense] = useState<MarketplaceListing | null>(null);
+  const [ethPrice, setEthPrice] = useState<number>(2500); // Default U2U price
+  const [priceLoading, setPriceLoading] = useState(true);
+  
+  // Cache loading states
+  const [isFromCache, setIsFromCache] = useState(false);
+  const [cacheAge, setCacheAge] = useState<number | null>(null);
+  
+  // Track whether we have real contract data vs demo/placeholder data
+  const [hasRealContractData, setHasRealContractData] = useState(false);
+  
+  // Wallet and contract integration
+  const { provider, signer } = useWallet();
+  const [marketplaceContract, setMarketplaceContract] = useState<ethers.Contract | null>(null);
+  const [userLicenses, setUserLicenses] = useState<any[]>([]);
+  
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (signer) {
+      const fetchUserLicenses = async () => {
+        const licenses = await licenseTokenService.getUserLicenses(await signer.getAddress(), provider);
+        setUserLicenses(licenses);
+      };
+      fetchUserLicenses();
+    }
+  }, [signer, provider]);
+
+  // Navigate to trading terminal for P2P trading
+  const navigateToTradingTerminal = (listing: MarketplaceListing) => {
+    // Convert price from Wei to U2U for proper display
+    let marketplacePrice = 0;
+    try {
+      const priceInWei = ethers.BigNumber.from(listing.price);
+      marketplacePrice = parseFloat(ethers.utils.formatEther(priceInWei));
+      console.log(`🔄 Converting price for ${listing.name}: ${listing.price} Wei → ${marketplacePrice} U2U`);
+    } catch (error) {
+      console.warn('⚠️ Error converting price:', error);
+      marketplacePrice = parseFloat(listing.price) || 0;
+    }
+
+    // Navigate to the OrderBook page with the selected token
+    navigate('/orderbook', { 
+      state: { 
+        selectedToken: {
+          tokenId: listing.tokenId,
+          name: listing.name,
+          image: listing.image,
+          type: listing.type || listing.category,
+          userBalance: 0, // User doesn't own this yet from marketplace
+          price: listing.price, // Keep original for compatibility
+          marketplacePrice: marketplacePrice, // Add converted U2U price
+          description: listing.description
+        }
+      } 
+    });
+  };
   const navigate = useNavigate();
 
   // Licensed IPs from backend API
@@ -157,6 +227,300 @@ const Marketplace: React.FC = () => {
 
       console.log('✅ Fetched licensed IPs:', result.data);
 
+      console.log(`📊 Found ${tokenIds.length} listings in marketplace`);
+      
+      // Initialize token contract for metadata fetching with fallback
+      let tokenContract;
+      try {
+        const signerOrProvider = signer || provider || new ethers.providers.JsonRpcProvider(
+          NETWORK_CONFIG[ACTIVE_NETWORK].rpcUrl
+        );
+        tokenContract = new ethers.Contract(TOKEN_CONTRACT, TOKEN_ABI, signerOrProvider);
+      } catch (tokenContractError) {
+        console.error('❌ Failed to initialize token contract:', tokenContractError);
+        // Continue without token contract - use fallback metadata
+      }
+      
+      // Process each listing and fetch metadata
+      const processedListings: MarketplaceListing[] = [];
+      const licensedIps = await marketplaceService.getLicensedIps();
+      const licensedIpMap = new Map(licensedIps.map(ip => [ip.ipId, ip]));
+
+      // First, collect all metadata URIs for batch processing
+      const metadataRequests: Array<{ tokenId: string; metadataURI: string; index: number }> = [];
+      const listingData: Array<{
+        tokenId: string;
+        issuer: string;
+        amount: number;
+        price: string;
+        index: number;
+      }> = [];
+      
+      // Prepare data and collect metadata URIs
+      for (let i = 0; i < tokenIds.length; i++) {
+        try {
+          // Safely convert BigNumbers to appropriate types
+          const tokenId = ethers.BigNumber.isBigNumber(tokenIds[i]) ? tokenIds[i].toString() : tokenIds[i].toString();
+          const issuer = issuers[i];
+          const amount = ethers.BigNumber.isBigNumber(amounts[i]) ? amounts[i].toNumber() : Number(amounts[i]);
+          const price = ethers.BigNumber.isBigNumber(prices[i]) ? prices[i].toString() : prices[i].toString();
+          
+          // Skip burned tokens by checking lifecycle status
+          if (tokenContract) {
+            try {
+              const lifecycle = await tokenContract.getTokenLifecycleStatus(tokenId);
+              if (lifecycle === 2) { // 2 = Burned
+                console.log(`🔥 Skipping burned token ${tokenId}`);
+                continue;
+              }
+            } catch (lifecycleError) {
+              console.warn(`⚠️ Could not check lifecycle for token ${tokenId}, including in listings`);
+            }
+          }
+          
+          console.log(`🔄 Preparing listing ${i + 1}/${tokenIds.length}:`, {
+            tokenId,
+            issuer,
+            amount,
+            priceInETH: ethers.utils.formatEther(price),
+            priceInWei: price
+          });
+          
+          // Store listing data
+          listingData.push({
+            tokenId,
+            issuer,
+            amount,
+            price,
+            index: i
+          });
+          
+          // Get token metadata URI from token contract with fallback
+          let metadataURI = '';
+          if (tokenContract) {
+            try {
+              // Try tokenMetadata first (custom function)
+              metadataURI = await tokenContract.tokenMetadata(tokenId);
+              console.log('✅ Got metadata URI from tokenMetadata:', metadataURI);
+            } catch (e) {
+              try {
+                // Fallback to uri function (standard ERC1155)
+                metadataURI = await tokenContract.uri(tokenId);
+                console.log('✅ Got metadata URI from uri:', metadataURI);
+              } catch (e2) {
+                console.warn('⚠️ Could not get metadata URI for token:', tokenId);
+                metadataURI = ''; // Will use fallback data
+              }
+            }
+          }
+          
+          if (metadataURI) {
+            metadataRequests.push({ tokenId, metadataURI, index: i });
+          }
+          
+        } catch (preparationError) {
+          console.error(`❌ Error preparing listing ${i}:`, preparationError);
+          // Continue with next listing
+        }
+      }
+      
+      console.log(`📊 Prepared ${listingData.length} listings, ${metadataRequests.length} metadata requests`);
+      
+      // Batch fetch metadata with caching
+      const metadataResults = await marketplaceCache.batchFetchMetadataWithCache(metadataRequests);
+      
+      // Now process all listings with cached metadata
+      for (const data of listingData) {
+        try {
+          const { tokenId, issuer, amount, price, index } = data;
+          
+          // Get cached metadata result
+          const metadataResult = metadataResults.get(tokenId);
+          const metadata = metadataResult?.metadata;
+          const imageUrl = metadataResult?.processedImageUrl || '';
+          
+          // Enhanced asset type detection (matching AssetTokenSelector logic)
+          let assetType = 'Investment Asset'; // Better default than 'Unknown'
+          
+          // Check metadata for asset type with multiple fallbacks
+          if (metadata) {
+            // Check direct assetType field
+            const metadataAssetType = metadata.assetType ||
+                                    (metadata.assetDetails?.assetType) ||
+                                    (metadata.assetDetails?.category);
+            if (metadataAssetType && metadataAssetType.trim() && metadataAssetType.trim() !== 'Unknown') {
+              assetType = metadataAssetType.trim();
+            }
+            
+            // Check attributes for asset type
+            if (metadata.attributes && Array.isArray(metadata.attributes)) {
+              const assetTypeAttr = metadata.attributes.find((attr: any) => 
+                attr.trait_type === 'Asset Type' || 
+                attr.trait_type === 'Category' ||
+                attr.trait_type === 'Type'
+              );
+              if (assetTypeAttr?.value && assetTypeAttr.value.trim() && assetTypeAttr.value.trim() !== 'Unknown') {
+                assetType = assetTypeAttr.value.trim();
+              }
+            }
+          }
+          
+          // Use unique asset-specific fallback images if no processed image
+          const finalImageUrl = imageUrl || getDeterministicAssetImage(assetType, tokenId);
+          console.log(`🎨 Final unique image for token ${tokenId} (${assetType}):`, finalImageUrl);
+          
+          // Fetch total supply for valuation calculation
+          let totalSupply = 0;
+          try {
+            // Use the mapping directly instead of calling a function
+            const totalListed = await marketplaceContract.totalTokensListed(tokenId);
+            totalSupply = parseInt(totalListed.toString());
+            console.log(`📊 Token ${tokenId} total supply: ${totalSupply}`);
+          } catch (e) {
+            console.warn(`⚠️ Could not fetch total supply for token ${tokenId}:`, e);
+            totalSupply = amount; // Fallback to available amount
+          }
+          
+          // Extract proper name and asset type from metadata with multiple fallbacks
+          let properName = `Asset Token #${tokenId}`;
+          let properAssetType = assetType;
+          
+          if (metadata) {
+            // Try different possible name fields in metadata
+            const metadataName = metadata.name || 
+                               metadata.title || 
+                               metadata.assetName ||
+                               (metadata.assetDetails?.name) ||
+                               (metadata.assetDetails?.title);
+            
+            if (metadataName && metadataName.trim()) {
+              properName = metadataName.trim();
+            }
+            
+            // Extract asset type from metadata with multiple fallbacks
+            const metadataAssetType = metadata.assetType ||
+                                    (metadata.assetDetails?.assetType) ||
+                                    (metadata.assetDetails?.category);
+            
+            if (metadataAssetType && metadataAssetType.trim()) {
+              properAssetType = metadataAssetType.trim();
+            }
+            
+            // Also check attributes for asset type
+            if (metadata.attributes && Array.isArray(metadata.attributes)) {
+              const assetTypeAttr = metadata.attributes.find((attr: any) => 
+                attr.trait_type === 'Asset Type' || 
+                attr.trait_type === 'Category' ||
+                attr.trait_type === 'Type'
+              );
+              if (assetTypeAttr?.value && assetTypeAttr.value.trim()) {
+                properAssetType = assetTypeAttr.value.trim();
+              }
+            }
+          }
+          
+          console.log(`📝 Token ${tokenId} processed with name: "${properName}", type: "${properAssetType}"`);
+          
+          const listing: MarketplaceListing = {
+            tokenId,
+            name: properName,
+            description: metadata?.description || `Asset token listed on the marketplace. Token ID: ${tokenId}`,
+            image: finalImageUrl,
+            price,
+            amount,
+            totalSupply,
+            seller: issuer,
+            metadataURI: metadataRequests.find(req => req.tokenId === tokenId)?.metadataURI || `placeholder-${tokenId}`,
+            metadata,
+            attributes: metadata?.attributes || [
+              { trait_type: "Asset Type", value: properAssetType }
+            ],
+            type: properAssetType,
+            category: properAssetType
+          };
+
+          if (licensedIpMap.has(tokenId)) {
+            listing.license = licensedIpMap.get(tokenId);
+          }
+          
+          processedListings.push(listing);
+          
+        } catch (listingError) {
+          console.error(`❌ Error processing listing for token ${data.tokenId}:`, listingError);
+          // Continue with next listing - don't fail entire load
+        }
+      }
+      
+      setListings(processedListings);
+      console.log('✅ Marketplace listings loaded:', processedListings.length);
+      
+      // Preload images for faster future access
+      console.log('🚀 Preloading marketplace images...');
+      const imageRequests = processedListings.map(listing => ({
+        url: listing.image,
+        assetType: listing.attributes?.find(attr => attr.trait_type === 'Asset Type')?.value || 'Real Estate',
+        tokenId: listing.tokenId
+      }));
+      
+      // Preload images in background (don't await to avoid blocking UI)
+      imageCacheService.preloadImages(imageRequests).catch(error => {
+        console.warn('⚠️ Image preloading failed:', error);
+      });
+      
+      // Mark that we now have real contract data
+      setHasRealContractData(true);
+      fetchedRealData = true; // Local flag for finally block
+      console.log('✅ Real contract data fetched and marked');
+      
+      // Cache the marketplace listings
+      console.log('💾 Caching marketplace listings...');
+      marketplaceCache.cacheMarketplaceListings(processedListings);
+      
+      if (processedListings.length === 0) {
+        toast.info('No assets could be loaded from the marketplace');
+      } else {
+        const isBackgroundRefresh = isFromCache;
+        if (isBackgroundRefresh) {
+          // Silent background refresh - no toast needed for better UX
+          console.log(`✅ Background refresh: Updated ${processedListings.length} marketplace listings`);
+        } else {
+          toast.success(`${processedListings.length} assets loaded from marketplace`);
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error loading marketplace listings:', error);
+      
+      let errorMessage = 'Failed to load marketplace listings';
+      if (error.message?.includes('Network synchronization')) {
+        errorMessage = 'Network synchronization issue. Loading demo data as fallback.';
+      } else if (error.message?.includes('Smart contract call failed')) {
+        errorMessage = 'Marketplace contract unavailable. Loading demo data as fallback.';
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network connection issue. Loading demo data as fallback.';
+      } else {
+        errorMessage = 'Contract data unavailable. Loading demo data as fallback.';
+      }
+      
+      // Load demo data as fallback
+      console.log('🔄 Loading demo marketplace data as fallback...');
+      setListings(DEMO_MARKETPLACE_DATA);
+      setError(errorMessage);
+      setHasRealContractData(false);
+      console.log('⚠️ Demo data loaded - keeping loading state active');
+      
+      toast.error(errorMessage);
+    } finally {
+      // Only turn off loading if we successfully fetched real contract data
+      if (fetchedRealData) {
+        setLoading(false);
+        console.log('✅ Turning off loading - real contract data fetched successfully');
+      } else {
+        console.log('⚠️ Keeping loading state - no real contract data fetched yet');
+        // Keep loading state active to show spinner instead of dummy cards
+      }
+    }
+  };
       setLicensedIPs(result.data.ips);
       setTotalPages(result.data.pagination.totalPages);
       setLoading(false);
@@ -197,6 +561,39 @@ const Marketplace: React.FC = () => {
         <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
       </div>
 
+  const handleMintLicense = async (listing: MarketplaceListing, amount: number) => {
+    if (!signer) {
+      toast.error('Please connect your wallet to mint a license.');
+      return;
+    }
+    try {
+      const licenseTokenId = await licenseTokenService.mintLicenseToken(
+        listing.license.ipId,
+        listing.license.licenseTermsId,
+        await signer.getAddress(),
+        amount,
+        signer
+      );
+      toast.success(`Successfully minted license token #${licenseTokenId}`);
+      setShowLicenseMintingModal(false);
+      // Refresh user licenses
+      const licenses = await licenseTokenService.getUserLicenses(await signer.getAddress(), provider);
+      setUserLicenses(licenses);
+    } catch (error) {
+      console.error('Error minting license:', error);
+      toast.error('Failed to mint license.');
+    }
+  };
+
+  const handlePurchaseSuccess = () => {
+    // Clear marketplace cache since listings have changed
+    console.log('🗑️ Clearing marketplace cache after successful purchase...');
+    marketplaceCache.clearCache();
+    
+    // Reload listings after successful purchase (force refresh)
+    loadMarketplaceListings(true);
+    toast.success('Purchase completed! Refreshing marketplace...');
+  };
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* License Type Filter */}
         <div>
@@ -325,6 +722,70 @@ const Marketplace: React.FC = () => {
             </div>
           )}
 
+        
+          <TabsContent value="invoices">
+            <ProfessionalListingsGrid 
+              listings={invoiceListings} 
+              category="Invoices"
+              onSelectListing={setSelectedListing}
+              onNavigateToTrading={navigateToTradingTerminal}
+              tokenPrice={ethPrice}
+              loading={loading}
+              userLicenses={userLicenses}
+            />
+          </TabsContent>
+          
+        </Tabs>
+      </div>
+
+      {/* Buy Modal */}
+      {selectedListing && (
+        <BuyModal
+          asset={{
+            tokenId: selectedListing.tokenId,
+            name: selectedListing.name,
+            description: selectedListing.description,
+            price: selectedListing.price, // Price in Wei
+            amount: selectedListing.amount,
+            image: selectedListing.image,
+            seller: selectedListing.seller,
+            metadata: selectedListing.metadata
+          }}
+          onClose={() => setSelectedListing(null)}
+          onSuccess={handlePurchaseSuccess}
+          tokenPrice={ethPrice}
+        />
+      )}
+
+      {/* Details Modal */}
+      {showDetails && (
+        <ProfessionalExpandedDetail 
+          listing={showDetails} 
+          onClose={() => setShowDetails(null)}
+          onBuy={(listing) => {
+            setShowDetails(null);
+            setSelectedListing(listing);
+          }}
+          onNavigateToTrading={navigateToTradingTerminal}
+          tokenPrice={ethPrice}
+          onMintLicense={(listing) => {
+            setSelectedListingForLicense(listing);
+            setShowLicenseMintingModal(true);
+          }}
+        />
+      )}
+
+      {showLicenseMintingModal && selectedListingForLicense && (
+        <LicenseMintingModal
+          listing={selectedListingForLicense}
+          tokenPrice={ethPrice}
+          onClose={() => setShowLicenseMintingModal(false)}
+          onMint={handleMintLicense}
+        />
+      )}
+    </div>
+  );
+}
           <div className="flex justify-between items-center">
             <span className="text-gray-500">Derivatives:</span>
             <Badge variant={ip.license.allowDerivatives ? 'default' : 'secondary'} className="text-xs">
