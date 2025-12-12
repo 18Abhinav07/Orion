@@ -29,6 +29,11 @@ export default function TestMinting() {
   const [error, setError] = useState<string | null>(null);
   const [mintToken, setMintToken] = useState<MintTokenResponse | null>(null);
   const [mintResult, setMintResult] = useState<MintResult | null>(null);
+  
+  // Metadata state (stored for reuse in warning modal)
+  const [contentHash, setContentHash] = useState<string>('');
+  const [ipMetadataURI, setIpMetadataURI] = useState<string>('');
+  const [nftMetadataURI, setNftMetadataURI] = useState<string>('');
 
   // File upload state
   const [file, setFile] = useState<File | null>(null);
@@ -107,29 +112,63 @@ export default function TestMinting() {
       const network = await provider.getNetwork();
       if (network.chainId !== CHAIN_ID_DECIMAL) throw new Error(`Wrong network! Please switch to Aeneid.`);
 
-      setStatus('📝 Preparing content...');
-      let contentHash: string;
+      setStatus('📋 Preparing content...');
+      let calculatedContentHash: string;
 
       if (file) {
         // Hash uploaded file
-        contentHash = await hashFile(file);
+        calculatedContentHash = await hashFile(file);
       } else {
         // Use default test content
         const testContent = `# Test IP Asset\n\nCreated at: ${new Date().toISOString()}`;
-        contentHash = hashContent(testContent);
+        calculatedContentHash = hashContent(testContent);
       }
+      
+      setContentHash(calculatedContentHash); // Store in state for later use
 
-      setStatus('☁️ Creating metadata...');
-      const ipMetadataURI = `ipfs://QmTestIP${Date.now()}`;
-      const nftMetadataURI = `ipfs://QmTestNFT${Date.now()}`;
+      setStatus('☁️ Uploading metadata to IPFS...');
+      
+      // Create real metadata objects
+      const ipMetadata = {
+        title: file?.name || 'Test IP Asset',
+        description: `IP Asset created on ${new Date().toISOString()}`,
+        contentHash: calculatedContentHash,
+        assetType,
+        creator: userAddress,
+        createdAt: new Date().toISOString()
+      };
+      
+      const nftMetadata = {
+        name: file?.name || 'Test IP Asset NFT',
+        description: `NFT for IP Asset - ${assetType}`,
+        image: '', // TODO: Add thumbnail/preview
+        attributes: [
+          { trait_type: 'Asset Type', value: assetType },
+          { trait_type: 'Creator', value: userAddress },
+          { trait_type: 'Content Hash', value: calculatedContentHash }
+        ]
+      };
+      
+      // Upload to IPFS via backend (or directly to Pinata)
+      // For now, using mock URIs - TODO: Implement real IPFS upload
+      const calculatedIpMetadataURI = `ipfs://QmTestIP${Date.now()}`;
+      const calculatedNftMetadataURI = `ipfs://QmTestNFT${Date.now()}`;
+      
+      // Store in state for later use
+      setIpMetadataURI(calculatedIpMetadataURI);
+      setNftMetadataURI(calculatedNftMetadataURI);
+      
+      // TODO: Replace with real IPFS upload
+      // const calculatedIpMetadataURI = await uploadToIPFS(ipMetadata);
+      // const calculatedNftMetadataURI = await uploadToIPFS(nftMetadata);
 
       // 🔥 DETECTION ENGINE: Check similarity BEFORE minting
       setStatus('🔍 Checking for similar content (RAG Detection Engine)...');
       const tokenResult = await verificationService.generateMintToken({
         creatorAddress: userAddress,
-        contentHash,
-        ipMetadataURI,
-        nftMetadataURI,
+        contentHash: calculatedContentHash,
+        ipMetadataURI: calculatedIpMetadataURI,
+        nftMetadataURI: calculatedNftMetadataURI,
         assetType, // NEW: Required for similarity detection
       });
 
@@ -157,7 +196,7 @@ export default function TestMinting() {
 
       // Clean content (0-40% similarity) - proceed automatically
       setStatus('✅ Content verified clean! Minting...');
-      await proceedWithMint(token, userAddress, provider);
+      await proceedWithMint(token, userAddress, provider, calculatedContentHash, calculatedIpMetadataURI, calculatedNftMetadataURI);
 
     } catch (err: any) {
       console.error('Minting error:', err);
@@ -168,15 +207,24 @@ export default function TestMinting() {
     }
   };
 
-  const proceedWithMint = async (token: MintTokenResponse, userAddress: string, provider: ethers.providers.Web3Provider) => {
+  const proceedWithMint = async (
+    token: MintTokenResponse, 
+    userAddress: string, 
+    provider: ethers.providers.Web3Provider,
+    contentHash: string,
+    ipMetadataURI: string,
+    nftMetadataURI: string
+  ) => {
     try {
       setStatus('⛓️ Minting IP Asset on Story Protocol...');
-      await storyProtocolService.initialize(provider);
+      const signer = provider.getSigner(); // Get signer, not provider!
+      await storyProtocolService.initialize(signer);
 
       const mintingResult = await storyProtocolService.verifyAndMint({
-        contentHash: '',
-        ipMetadataURI: '',
-        nftMetadataURI: '',
+        to: userAddress,
+        contentHash,
+        ipMetadataURI,
+        nftMetadataURI,
         nonce: token.nonce,
         expiryTimestamp: token.expiresAt,
         signature: token.signature,
@@ -198,13 +246,15 @@ export default function TestMinting() {
 
     try {
       if (!mintToken) throw new Error('No mint token available');
+      if (!contentHash) throw new Error('No content hash available');
+      if (!ipMetadataURI || !nftMetadataURI) throw new Error('Metadata URIs not available');
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const userAddress = await signer.getAddress();
 
       setStatus('✅ Proceeding as original work...');
-      await proceedWithMint(mintToken, userAddress, provider);
+      await proceedWithMint(mintToken, userAddress, provider, contentHash, ipMetadataURI, nftMetadataURI);
 
     } catch (err: any) {
       console.error('Minting error:', err);
