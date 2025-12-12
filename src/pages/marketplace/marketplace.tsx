@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, DollarSign, Award, Shield, TrendingUp, Filter } from 'lucide-react';
 import { Tabs, TabsContent, TabsTrigger, TabsList } from '../../components/ui/tabs';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
+import HeroBackground from '../../components/HeroBackground';
+
+// ========================================
+// FLOW BLOCKCHAIN CODE - COMMENTED OUT
+// ========================================
+/*
 import { ethers } from 'ethers';
-import { BackgroundBeamsWithCollision } from '../../components/ui/background-beams-with-collision';
-import BuyModal from '../../components/BuyModal';
-import { fetchETHPrice, formatPriceInUSD, convertETHToUSD, formatETHWithUSD } from '../../utils/priceService';
 import { useWallet } from '../../context/WalletContext';
 import { MARKETPLACE_CONTRACT, TOKEN_CONTRACT, NETWORK_CONFIG, ACTIVE_NETWORK } from '../../lib/contractAddress';
 import { MARKETPLACE_ABI } from '../../utils/marketplaceABI';
+import { fetchETHPrice, formatPriceInUSD, convertETHToUSD, formatETHWithUSD } from '../../utils/priceService';
 import { processImageURLFast, processImageURLWithAuth, fetchEnhancedMetadata } from '../../utils/imageUtils';
 import { metadataService } from '../../services/metadataService';
 import { processImageURL as processPinataImageURL } from '../../utils/pinataImageFetcher';
@@ -28,83 +34,71 @@ import { LicenseMintingModal } from '../../components/marketplace/LicenseMinting
 import { marketplaceService } from '../../services/marketplaceService';
 import { licenseTokenService } from '../../services/licenseTokenService';
 
-// Alternative RPC endpoints for U2U Nebulas Testnet
-const U2U_NEBULAS_TESTNET_RPC_URLS = [
+// Alternative RPC endpoints for Flow
+const FLOW_RPC_URLS = [
   "https://mainnet.evm.nodes.onflow.org/"
 ];
 
-// Demo marketplace data for fallback when RPC is having issues
-const DEMO_MARKETPLACE_DATA = [
-  {
-    tokenId: "1",
-    name: "Luxury Villa in Miami",
-    description: "A beautiful beachfront villa with stunning ocean views",
-    image: "ipfs://QmQoHpAJNJyWUgC7QGMgAnzdaMekpMAeCi1voJH6iSaFRi",
-    price: "250000000000000000000000", // 250,000 U2U in Wei
-    amount: 100,
-    totalSupply: 1000, // Total supply for valuation calculation
-    seller: "0x1234567890123456789012345678901234567890",
-    metadataURI: "ipfs://QmQoHpAJNJyWUgC7QGMgAnzdaMekpMAeCi1voJH6iSaFRi",
-    attributes: [
-      { trait_type: "Type", value: "Real Estate" },
-      { trait_type: "Location", value: "Miami, FL" },
-      { trait_type: "Area", value: "3,500 sq ft" },
-      { trait_type: "Bedrooms", value: "4" },
-      { trait_type: "Bathrooms", value: "3" }
-    ]
-  },
-  {
-    tokenId: "2",
-    name: "Gold Bullion Investment",
-    description: "Premium 1oz gold bars with certified authenticity",
-    image: getDeterministicAssetImage("Commodity", "2"),
-    price: "2100000000000000000000", // 2,100 U2U in Wei
-    amount: 50,
-    totalSupply: 500, // Total supply for valuation calculation
-    seller: "0x2345678901234567890123456789012345678901",
-    metadataURI: "demo://gold-bullion",
-    attributes: [
-      { trait_type: "Type", value: "Precious Metal" },
-      { trait_type: "Weight", value: "1 oz" },
-      { trait_type: "Purity", value: "99.99%" },
-      { trait_type: "Certification", value: "LBMA Certified" }
-    ]
-  },
-  {
-    tokenId: "3",
-    name: "Vintage Wine Collection",
-    description: "Rare vintage wines from French vineyards",
-    image: getDeterministicAssetImage("Commodity", "3"),
-    price: "5000000000000000000000", // 5,000 U2U in Wei
-    amount: 25,
-    totalSupply: 100, // Total supply for valuation calculation
-    seller: "0x3456789012345678901234567890123456789012",
-    metadataURI: "demo://vintage-wine",
-    attributes: [
-      { trait_type: "Type", value: "Wine" },
-      { trait_type: "Vintage", value: "1982" },
-      { trait_type: "Region", value: "Bordeaux" },
-      { trait_type: "Bottles", value: "12" }
-    ]
-  }
-];
-
-// Simple ABI for ERC1155 token contract to get metadata
-const TOKEN_ABI = [
-  "function uri(uint256 tokenId) external view returns (string memory)",
-  "function tokenMetadata(uint256 tokenId) external view returns (string memory)",
-  "function tokenPrice(uint256 tokenId) external view returns (uint256)"
-];
-
-// Helper function to calculate total valuation (moved outside component for global access)
-const calculateTotalValuation = (pricePerTokenWei: string, totalSupply: number): string => {
-  const pricePerTokenU2U = parseFloat(ethers.utils.formatEther(pricePerTokenWei));
-  const totalValuation = pricePerTokenU2U * totalSupply;
-  return totalValuation.toLocaleString('en-US', { 
-    minimumFractionDigits: 2, 
-    maximumFractionDigits: 2 
-  });
+// Contract initialization code - ALL COMMENTED OUT
+const initializeContract = async () => {
+  // Flow contract initialization logic
 };
+*/
+
+// ========================================
+// BACKEND API INTEGRATION
+// ========================================
+
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api';
+
+// Licensed IP Asset interface (from backend API)
+interface LicensedIP {
+  nonce: number;
+  ipId: string;
+  tokenId: number;
+  creatorAddress: string;
+  contentHash: string;
+  status: string;
+  metadata: {
+    ipMetadataURI: string;
+    nftMetadataURI: string;
+  };
+  license: {
+    licenseTermsId: string;
+    licenseType: 'commercial_remix' | 'non_commercial';
+    royaltyPercent: number;
+    allowDerivatives: boolean;
+    commercialUse: boolean;
+    licenseTxHash?: string;
+    licenseAttachedAt?: number;
+  };
+  registeredAt: number;
+  originalFilename?: string;
+  ipfsUrl?: string;
+}
+
+interface MarketplaceResponse {
+  success: boolean;
+  data: {
+    ips: LicensedIP[];
+    pagination: {
+      page: number;
+      limit: number;
+      totalItems: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+    filters: {
+      licenseType?: string;
+      commercialUse?: boolean;
+      royaltyRange?: {
+        min?: number;
+        max?: number;
+      };
+    };
+  };
+}
 
 const Marketplace: React.FC = () => {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
@@ -170,826 +164,68 @@ const Marketplace: React.FC = () => {
       } 
     });
   };
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    // Clean up expired cache on component mount
-    marketplaceCache.clearExpiredCache();
-    
-    // Also check for and clear dummy cache data
-    const cached = marketplaceCache.getCachedMarketplaceListings();
-    if (cached && !isRealContractData(cached)) {
-      console.log('🗑️ Detected dummy cache data on mount, clearing...');
-      marketplaceCache.clearCache();
-      setHasRealContractData(false);
-      setIsFromCache(false);
-    }
-  }, []);
+  // Licensed IPs from backend API
+  const [licensedIPs, setLicensedIPs] = useState<LicensedIP[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    initializeContract();
-    loadETHPrice();
-  }, [provider, signer]);
+  // Filters
+  const [licenseTypeFilter, setLicenseTypeFilter] = useState<string>('all');
+  const [commercialUseFilter, setCommercialUseFilter] = useState<string>('all');
+  const [maxRoyalty, setMaxRoyalty] = useState<number>(100);
 
-  useEffect(() => {
-    if (marketplaceContract) {
-      loadMarketplaceListings();
-    }
-  }, [marketplaceContract]);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Initialize marketplace contract with fallback RPC endpoints
-  const initializeContract = async () => {
+  const handlenavigate = () => {
+    navigate('/dashboard');
+  }
+
+  // ========================================
+  // FETCH LICENSED IPS FROM BACKEND API
+  // ========================================
+  const fetchLicensedIPs = async () => {
     try {
-      console.log('🔄 Initializing marketplace contract...');
-      console.log('Contract address:', MARKETPLACE_CONTRACT);
-      console.log('Network:', ACTIVE_NETWORK);
-      console.log('RPC URL:', NETWORK_CONFIG[ACTIVE_NETWORK].rpcUrl);
-      
-      let providerToUse;
-      
-      if (!provider) {
-        console.log('⚠️ No wallet provider, trying public RPC endpoints...');
-        
-        // Try multiple RPC endpoints
-        for (let i = 0; i < U2U_NEBULAS_TESTNET_RPC_URLS.length; i++) {
-          try {
-            console.log(`🔄 Trying RPC endpoint ${i + 1}/${U2U_NEBULAS_TESTNET_RPC_URLS.length}: ${U2U_NEBULAS_TESTNET_RPC_URLS[i]}`);
-            providerToUse = new ethers.providers.JsonRpcProvider(U2U_NEBULAS_TESTNET_RPC_URLS[i]);
-            
-            // Test the connection with a simple call
-            const network = await providerToUse.getNetwork();
-            console.log(`✅ Successfully connected to RPC endpoint ${i + 1}, Chain ID: ${network.chainId}`);
-            break;
-          } catch (rpcError) {
-            console.warn(`❌ RPC endpoint ${i + 1} failed:`, rpcError);
-            if (i === U2U_NEBULAS_TESTNET_RPC_URLS.length - 1) {
-              throw new Error('All RPC endpoints failed. Using demo data.');
-            }
-          }
-        }
-      } else {
-        console.log('✅ Using wallet provider');
-        providerToUse = provider;
+      setLoading(true);
+      setError('');
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('page', currentPage.toString());
+      params.append('limit', '20');
+
+      if (licenseTypeFilter !== 'all') {
+        params.append('licenseType', licenseTypeFilter);
       }
 
-      // Check network if using wallet provider
-      if (provider) {
-        try {
-          const network = await provider.getNetwork();
-          console.log('Connected to network:', network.name, 'Chain ID:', network.chainId);
-          console.log('Expected Chain ID:', NETWORK_CONFIG[ACTIVE_NETWORK].chainId);
-          
-          if (network.chainId !== NETWORK_CONFIG[ACTIVE_NETWORK].chainId) {
-            const errorMsg = `Wrong network! Please switch to ${NETWORK_CONFIG[ACTIVE_NETWORK].name} (Chain ID: ${NETWORK_CONFIG[ACTIVE_NETWORK].chainId})`;
-            console.error('❌ Network mismatch:', errorMsg);
-            
-            // Try to switch network automatically
-            try {
-              console.log('🔄 Attempting to switch network automatically...');
-              const ethereum = (window as any).ethereum;
-              if (ethereum) {
-                await ethereum.request({
-                  method: 'wallet_switchEthereumChain',
-                  params: [{ chainId: `0x${NETWORK_CONFIG[ACTIVE_NETWORK].chainId.toString(16)}` }],
-                });
-                console.log('✅ Network switched successfully!');
-                // Retry initialization after network switch
-                setTimeout(() => initializeContract(), 1000);
-                return;
-              }
-            } catch (switchError: any) {
-              console.warn('⚠️ Could not switch network automatically:', switchError);
-              
-              // If network doesn't exist, try to add it
-              if (switchError.code === 4902) {
-                try {
-                  console.log('🔄 Attempting to add U2U Mainnet to wallet...');
-                  const ethereum = (window as any).ethereum;
-                  await ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                      chainId: `0x${NETWORK_CONFIG[ACTIVE_NETWORK].chainId.toString(16)}`,
-                      chainName: NETWORK_CONFIG[ACTIVE_NETWORK].name,
-                      nativeCurrency: NETWORK_CONFIG[ACTIVE_NETWORK].nativeCurrency,
-                      rpcUrls: [NETWORK_CONFIG[ACTIVE_NETWORK].rpcUrl],
-                      blockExplorerUrls: [NETWORK_CONFIG[ACTIVE_NETWORK].blockExplorer]
-                    }]
-                  });
-                  console.log('✅ U2U Mainnet added to wallet!');
-                  setTimeout(() => initializeContract(), 1000);
-                  return;
-                } catch (addError) {
-                  console.error('❌ Failed to add network:', addError);
-                }
-              }
-            }
-            
-            throw new Error(errorMsg);
-          }
-        } catch (networkError) {
-          console.error('❌ Network check failed:', networkError);
-          // Fall back to public RPC
-          providerToUse = new ethers.providers.JsonRpcProvider(
-            NETWORK_CONFIG[ACTIVE_NETWORK].rpcUrl
-          );
-        }
+      if (commercialUseFilter === 'commercial') {
+        params.append('commercialUse', 'true');
+      } else if (commercialUseFilter === 'non-commercial') {
+        params.append('commercialUse', 'false');
       }
 
-      const signerToUse = signer || providerToUse;
-      const contract = new ethers.Contract(MARKETPLACE_CONTRACT, MARKETPLACE_ABI, signerToUse);
-      
-      // Verify contract exists with retry logic (same as admin dashboard)
-     try {
-          console.log('🔍 Testing contract call with getAllListings...');
-          const testCall = await contract.getAllListings();
-          console.log('✅ Contract call successful, listings response:', testCall);
-          console.log('✅ Contract is functional and responding to calls');
-        } catch (testError) {
-          console.warn('⚠️ Contract test call failed but contract exists:', testError);
-          console.log('📝 This might be normal if no listings exist yet');
-          // Don't throw here - the contract might exist but have different functions or no data
-        }
-      
-      setMarketplaceContract(contract);
-      console.log('✅ Marketplace contract initialized successfully');
-      
-    } catch (error: any) {
-      console.error('❌ Error initializing marketplace contract:', error);
-      console.log('🔄 Loading demo marketplace data as fallback...');
-      
-      // Load demo data when contract initialization fails
-      setListings(DEMO_MARKETPLACE_DATA);
-      setLoading(false);
-      setError('Connected to demo marketplace data. Contract data unavailable due to network issues.');
-      
-      toast.loading('Marketplace is loading please wait');
-    }
-  };
-
-  const loadETHPrice = async () => {
-    setPriceLoading(true);
-    try {
-      const price = await fetchETHPrice();
-      setEthPrice(price);
-      console.log(`S price loaded: $${price}`);
-    } catch (error) {
-      console.error('Failed to fetch S price:', error);
-      toast.error('Failed to fetch S price, using fallback');
-    } finally {
-      setPriceLoading(false);
-    }
-  };
-
-  // Enhanced IPFS metadata fetching with JWT authentication and multiple gateways
-  const fetchMetadataFromIPFS = async (metadataURI: string) => {
-    try {
-      console.log('🔄 Fetching metadata from IPFS:', metadataURI);
-      
-      // Get JWT token from environment
-      const JWT_TOKEN = import.meta.env.JWT_SECRET || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJjMDU3NzI3NC0xMzU2LTRmZjgtODk5Yi02MjU0MTZmNTMxYTEiLCJlbWFpbCI6ImFkb2U3NDAzQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJlZTdmZDhiNDY3MGU4ZTc1Y2YxZiIsInNjb3BlZEtleVNlY3JldCI6Ijg3NjU3MDdkNzBmNzAyZjFkYTAxMmVhNmU1MmYzNDUyMjFkOGE0YzgwMWFjYjVlN2Y4NTk5NzYwODIyNTc3ZGYiLCJleHAiOjE3OTA5Mzk1NTR9.huKruxuknG20OfbJsMjiuIaLTQMbCWsILk1B5Dl7Oko';
-      
-      // Smart IPFS URL handling - avoid double gateway URLs
-      let ipfsHash = '';
-      if (metadataURI.includes('https://gateway.pinata.cloud/ipfs/https://gateway.pinata.cloud/ipfs/')) {
-        // Handle doubled gateway URLs by extracting the final hash
-        const parts = metadataURI.split('https://gateway.pinata.cloud/ipfs/');
-        if (parts.length > 2) {
-          const lastPart = parts[parts.length - 1];
-          if (lastPart.startsWith('Qm') || lastPart.startsWith('baf')) {
-            ipfsHash = lastPart;
-          } else {
-            throw new Error('Invalid doubled IPFS URL');
-          }
-        } else {
-          throw new Error('Invalid doubled IPFS URL format');
-        }
-      } else if (metadataURI.startsWith('ipfs://')) {
-        // Convert ipfs:// to hash
-        ipfsHash = metadataURI.replace('ipfs://', '');
-      } else if (metadataURI.startsWith('https://gateway.pinata.cloud/ipfs/')) {
-        // Extract hash from gateway URL
-        ipfsHash = metadataURI.replace('https://gateway.pinata.cloud/ipfs/', '');
-      } else if (metadataURI.startsWith('Qm') || metadataURI.startsWith('baf')) {
-        // Raw IPFS hash
-        ipfsHash = metadataURI;
-      } else {
-        throw new Error('Unrecognized IPFS format: ' + metadataURI);
-      }
-      
-      // Skip obviously fake/test hashes
-      if (ipfsHash.includes('TestHash') || ipfsHash.length < 40) {
-        console.log('⚠️ Skipping fake/test metadata hash:', ipfsHash);
-        return null;
-      }
-      
-      // Multiple IPFS gateways for fallback - Pinata first with JWT auth
-      const gateways = [
-        {
-          url: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-          requiresAuth: true,
-          name: 'Pinata (Authenticated)'
-        },
-        {
-          url: `https://ipfs.io/ipfs/${ipfsHash}`,
-          requiresAuth: false,
-          name: 'IPFS.io'
-        },
-        {
-          url: `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
-          requiresAuth: false,
-          name: 'Cloudflare'
-        },
-        {
-          url: `https://dweb.link/ipfs/${ipfsHash}`,
-          requiresAuth: false,
-          name: 'DWeb.link'
-        }
-      ];
-      
-      console.log('🌐 Trying multiple IPFS gateways with JWT authentication...');
-      
-      // Try each gateway with timeout and appropriate headers
-      for (let i = 0; i < gateways.length; i++) {
-        const gateway = gateways[i];
-        console.log(`🔄 Trying gateway ${i + 1}/${gateways.length}: ${gateway.name} - ${gateway.url}`);
-        
-        try {
-          const headers: Record<string, string> = {
-            'Accept': 'application/json'
-          };
-          
-          // Skip JWT authentication to avoid CORS preflight issues
-          // Gateway requests work without authentication for public IPFS content
-          
-          const response = await Promise.race([
-            fetch(gateway.url, {
-              method: 'GET',
-              headers
-            }),
-            new Promise<Response>((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout')), 8000)
-            )
-          ]);
-          
-          if (response.ok) {
-            const metadata = await response.json();
-            console.log(`✅ Metadata fetched successfully from ${gateway.name}`);
-            
-            // Smart image processing - handle various IPFS URL formats
-            if (metadata.image) {
-              if (metadata.image.startsWith('ipfs://')) {
-                const imageHash = metadata.image.replace('ipfs://', '');
-                metadata.image = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
-                console.log('✅ Converted IPFS image URL:', metadata.image);
-              } else if (metadata.image.startsWith('https://gateway.pinata.cloud/ipfs/')) {
-                // Already a gateway URL, use as-is
-                console.log('✅ Image already in gateway format:', metadata.image);
-              } else if (metadata.image.startsWith('Qm') || metadata.image.startsWith('baf')) {
-                // Raw IPFS hash
-                metadata.image = `https://gateway.pinata.cloud/ipfs/${metadata.image}`;
-                console.log('✅ Converted raw IPFS hash to gateway URL:', metadata.image);
-              }
-            }
-            
-            return metadata;
-          } else if (response.status === 429) {
-            console.log(`⚠️ Gateway ${gateway.name} rate limited (429), trying next...`);
-            continue; // Try next gateway
-          } else if (response.status === 403) {
-            console.log(`⚠️ Gateway ${gateway.name} access forbidden (403), trying next...`);
-            continue; // Try next gateway
-          } else {
-            console.log(`⚠️ Gateway ${i + 1} failed with status ${response.status}, trying next...`);
-            continue; // Try next gateway
-          }
-        } catch (gatewayError) {
-          console.log(`⚠️ Gateway ${i + 1} error: ${gatewayError.message}, trying next...`);
-          continue; // Try next gateway
-        }
-      }
-      
-      throw new Error('All IPFS gateways failed or rate limited');
-      
-    } catch (error) {
-      console.error('❌ Error fetching IPFS metadata:', error);
-      return null;
-    }
-  };
-
-  // Enhanced image processing with CORS-friendly gateways
-  const processImageURL = (imageUrl: string, metadata?: any): string => {
-    try {
-      console.log('🔐 Processing image for browser rendering:', imageUrl);
-      
-      // Extract IPFS hash from any IPFS URL format
-      let ipfsHash = '';
-      
-      if (imageUrl.startsWith('ipfs://')) {
-        ipfsHash = imageUrl.replace('ipfs://', '');
-      } else if (imageUrl.includes('/ipfs/')) {
-        const parts = imageUrl.split('/ipfs/');
-        ipfsHash = parts[parts.length - 1];
-      } else if (imageUrl.match(/^Qm[a-zA-Z0-9]{44}$/)) {
-        ipfsHash = imageUrl;
-      } else if (imageUrl.startsWith('http') && !imageUrl.includes('/ipfs/')) {
-        // Regular HTTP URL, return as-is
-        return imageUrl;
-      }
-      
-      if (ipfsHash) {
-        // Optimized gateway order based on working examples
-        // Start with Pinata since user confirmed it works, then CORS-friendly alternatives
-        const optimizedGateways = [
-          `https://olive-left-snake-740.mypinata.cloud/ipfs/${ipfsHash}`,
-          `https://gateway.pinata.cloud/ipfs/${ipfsHash}`, // Try Pinata first (works for user's content)
-          `https://ipfs.io/ipfs/${ipfsHash}`,
-          `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
-          `https://dweb.link/ipfs/${ipfsHash}`,
-          `https://gateway.ipfs.io/ipfs/${ipfsHash}`
-        ];
-        
-        // Return the first gateway for browser rendering (will fallback automatically if fails)
-        const processedUrl = optimizedGateways[0];
-        console.log(`🌐 Using optimized gateway: ${imageUrl} → ${processedUrl}`);
-        return processedUrl;
-      }
-      
-      // Fallback to original URL
-      return imageUrl;
-    } catch (error) {
-      console.error('❌ Error processing image URL:', error);
-      // Fallback to regular processing
-      return processImageURLFast(imageUrl, 'Unknown', '0');
-    }
-  };
-
-  // Simple and fast processing of individual listing
-  const processListing = async (tokenId: any, issuer: string, amount: any, price: any, tokenContract: any): Promise<MarketplaceListing | null> => {
-    try {
-      const tokenIdStr = tokenId.toString();
-      const amountNum = amount.toNumber();
-      const priceStr = price.toString();
-      
-      console.log(`🔄 Processing token ${tokenIdStr}...`);
-      
-      // Fetch total supply - this should be the originally minted/issued amount
-      let totalSupply = 0;
-      if (tokenContract) {
-        try {
-          // Try to get total supply from token contract (this is the original minted amount)
-          const tokenTotalSupply = await tokenContract.totalSupply ? await tokenContract.totalSupply(tokenIdStr) : null;
-          if (tokenTotalSupply) {
-            totalSupply = tokenTotalSupply.toNumber();
-            console.log(`📊 Token ${tokenIdStr} total supply (originally minted): ${totalSupply}`);
-          }
-        } catch (e) {
-          console.warn(`⚠️ Could not fetch total supply from token contract for token ${tokenIdStr}:`, e);
-        }
-      }
-      
-      // If we couldn't get total supply from token contract, make an intelligent estimate
-      if (totalSupply === 0) {
-        // Total supply should always be significantly larger than available amount
-        // This represents the original minted amount vs current marketplace availability
-        totalSupply = Math.max(amountNum * 5, amountNum + 2000, 10000);
-        console.log(`📊 Token ${tokenIdStr} estimated total supply (original minting): ${totalSupply}`);
-      }
-      
-      // Ensure total supply is always meaningfully larger than available amount
-      if (totalSupply <= amountNum) {
-        totalSupply = Math.max(amountNum * 8, amountNum + 5000, 15000);
-        console.log(`📊 Token ${tokenIdStr} adjusted total supply to ${totalSupply} (ensuring meaningful difference from available ${amountNum})`);
-      }
-      
-      // Quick metadata URI fetch
-      let metadataURI = '';
-      if (tokenContract) {
-        try {
-          metadataURI = await tokenContract.tokenMetadata(tokenIdStr);
-        } catch (e) {
-          try {
-            metadataURI = await tokenContract.uri(tokenIdStr);
-          } catch (e2) {
-            console.warn('⚠️ No metadata URI for token:', tokenIdStr);
-          }
-        }
-      }
-      
-      // Use improved metadata fetch with multiple gateways
-      let metadata = null;
-      if (metadataURI) {
-        metadata = await metadataService.fetchMetadataFromIPFS(metadataURI);
-      }
-      
-      // Determine asset type
-      let assetType = 'Real Estate'; // Default
-      if (metadata?.attributes) {
-        const assetTypeAttr = metadata.attributes.find((attr: any) => 
-          attr.trait_type === 'Asset Type'
-        );
-        assetType = assetTypeAttr?.value || assetType;
-      }
-      
-      // Process image using enhanced Pinata utilities
-      const imageUrl = processPinataImageURL(metadata?.image || '', metadata);
-      console.log(`🖼️ Enhanced image processing for token ${tokenIdStr}: ${metadata?.image} → ${imageUrl}`);
-      
-      // Final debug log to show the difference
-      console.log(`🔍 Token ${tokenIdStr} FINAL VALUES:`, {
-        availableForPurchase: amountNum,
-        totalSupplyOriginallyMinted: totalSupply,
-        differenceRatio: (totalSupply / amountNum).toFixed(2) + 'x'
-      });
-      
-      return {
-        tokenId: tokenIdStr,
-        name: metadata?.name || `Asset #${tokenIdStr}`,
-        description: metadata?.description || `A tokenized asset with ID ${tokenIdStr}`,
-        image: imageUrl,
-        price: priceStr,
-        amount: amountNum,
-        totalSupply: totalSupply,
-        seller: issuer,
-        metadataURI,
-        metadata,
-        attributes: metadata?.attributes || [
-          { trait_type: 'Asset Type', value: assetType },
-          { trait_type: 'Token ID', value: tokenIdStr }
-        ]
-      };
-      
-    } catch (error) {
-      console.error('❌ Error processing listing:', error);
-      return null;
-    }
-  };
-
-  // Helper function to determine if data contains real contract data vs dummy/placeholder data
-  const isRealContractData = (listings: MarketplaceListing[]): boolean => {
-    if (!listings || listings.length === 0) return false;
-    
-    // Check for multiple indicators of dummy/placeholder data
-    const indicators = listings.map(listing => {
-      const checks = {
-        hasDummyName: listing.name.startsWith('Asset Token #') || 
-                     listing.name.includes('Demo') ||
-                     listing.name.includes('demo') ||
-                     listing.name.includes('Example'),
-        
-        hasDummyDescription: listing.description.includes('Asset token listed on the marketplace. Token ID:') ||
-                           listing.description.includes('Token ID:') ||
-                           listing.description.length < 50,
-        
-        hasDummyMetadataURI: listing.metadataURI?.includes('placeholder-') ||
-                           !listing.metadataURI ||
-                           listing.metadataURI === `placeholder-${listing.tokenId}`,
-        
-        hasGenericType: listing.type === 'Investment Asset' && 
-                       listing.category === 'Investment Asset' &&
-                       listing.attributes?.length === 1 &&
-                       listing.attributes[0]?.trait_type === 'Asset Type' &&
-                       listing.attributes[0]?.value === 'Investment Asset',
-        
-        hasGenericImage: listing.image?.includes('placeholder') ||
-                        !listing.image,
-        
-        lacksProperMetadata: !listing.metadata || 
-                           Object.keys(listing.metadata || {}).length === 0
-      };
-      
-      // Count how many dummy indicators this listing has
-      const dummyScore = Object.values(checks).filter(Boolean).length;
-      console.log(`🔍 Token ${listing.tokenId} dummy indicators:`, checks, `Score: ${dummyScore}/6`);
-      
-      // If 3 or more indicators suggest it's dummy data, consider it dummy
-      return dummyScore >= 3;
-    });
-    
-    // If more than 50% of listings appear to be dummy data, consider the whole dataset dummy
-    const dummyCount = indicators.filter(Boolean).length;
-    const dummyPercentage = dummyCount / listings.length;
-    
-    const isReal = dummyPercentage < 0.5; // Less than 50% dummy = consider it real
-    console.log(`🔍 Data validation: ${dummyCount}/${listings.length} listings appear dummy (${(dummyPercentage * 100).toFixed(1)}%), isReal=${isReal}`);
-    
-    return isReal;
-  };
-
-  const loadMarketplaceListings = async (forceRefresh: boolean = false) => {
-    console.log(`🔄 loadMarketplaceListings called with forceRefresh: ${forceRefresh}`);
-    
-    // First, try to load from cache if not forcing refresh
-    if (!forceRefresh) {
-      console.log('🎯 Checking cache for marketplace listings...');
-      const cachedListings = marketplaceCache.getCachedMarketplaceListings();
-      console.log('📦 Raw cached listings:', cachedListings);
-      
-      if (cachedListings && cachedListings.length > 0) {
-        console.log(`✅ Loaded ${cachedListings.length} marketplace listings from cache instantly!`);
-        
-        // Post-process cached listings to ensure proper names and asset types
-        const enhancedCachedListings = cachedListings.map(listing => {
-          // Extract proper name and asset type from metadata with multiple fallbacks
-          let properName = listing.name || `Asset Token #${listing.tokenId}`;
-          let properAssetType = listing.type || listing.category || 'Investment Asset';
-          
-          if (listing.metadata) {
-            // Try different possible name fields in metadata
-            const metadataName = listing.metadata.name || 
-                               listing.metadata.title || 
-                               listing.metadata.assetName ||
-                               (listing.metadata.assetDetails?.name) ||
-                               (listing.metadata.assetDetails?.title);
-            
-            if (metadataName && metadataName.trim() && !metadataName.trim().startsWith('Asset Token #')) {
-              properName = metadataName.trim();
-            }
-            
-            // Extract asset type from metadata with multiple fallbacks
-            const metadataAssetType = listing.metadata.assetType ||
-                                    (listing.metadata.assetDetails?.assetType) ||
-                                    (listing.metadata.assetDetails?.category);
-            
-            if (metadataAssetType && metadataAssetType.trim() && metadataAssetType.trim() !== 'Unknown') {
-              properAssetType = metadataAssetType.trim();
-            }
-            
-            // Also check attributes for asset type
-            if (listing.metadata.attributes && Array.isArray(listing.metadata.attributes)) {
-              const assetTypeAttr = listing.metadata.attributes.find((attr: any) => 
-                attr.trait_type === 'Asset Type' || 
-                attr.trait_type === 'Category' ||
-                attr.trait_type === 'Type'
-              );
-              if (assetTypeAttr?.value && assetTypeAttr.value.trim() && assetTypeAttr.value.trim() !== 'Unknown') {
-                properAssetType = assetTypeAttr.value.trim();
-              }
-            }
-          }
-          
-          // If still using default name or type, try to get from individually cached metadata
-          if (properName.startsWith('Asset Token #') || properAssetType === 'Unknown' || properAssetType === 'Investment Asset') {
-            const cachedMetadata = marketplaceCache.getCachedAssetMetadata(listing.tokenId);
-            if (cachedMetadata?.metadata) {
-              const metadataName = cachedMetadata.metadata.name || 
-                                 cachedMetadata.metadata.title || 
-                                 cachedMetadata.metadata.assetName;
-              if (metadataName && metadataName.trim() && !metadataName.trim().startsWith('Asset Token #')) {
-                properName = metadataName.trim();
-              }
-              
-              const metadataAssetType = cachedMetadata.metadata.assetType ||
-                                       (cachedMetadata.metadata.assetDetails?.assetType);
-              if (metadataAssetType && metadataAssetType.trim() && metadataAssetType.trim() !== 'Unknown') {
-                properAssetType = metadataAssetType.trim();
-              }
-            }
-          }
-          
-          console.log(`🔍 Enhanced cached token ${listing.tokenId}: "${properName}" (${properAssetType})`);
-          console.log(`📋 Original attributes:`, listing.attributes);
-          console.log(`📋 Original type/category:`, listing.type, listing.category);
-          
-          const enhancedAttributes = listing.attributes ? listing.attributes.map(attr => {
-            // Update the Asset Type attribute if it exists
-            if (attr.trait_type === 'Asset Type' || attr.trait_type === 'Type' || attr.trait_type === 'Category') {
-              return { ...attr, value: properAssetType };
-            }
-            return attr;
-          }).concat(
-            // Add Asset Type attribute if it doesn't exist
-            listing.attributes.some(attr => 
-              attr.trait_type === 'Asset Type' || 
-              attr.trait_type === 'Type' || 
-              attr.trait_type === 'Category'
-            ) ? [] : [{ trait_type: "Asset Type", value: properAssetType }]
-          ) : [{ trait_type: "Asset Type", value: properAssetType }];
-          
-          console.log(`📋 Enhanced attributes:`, enhancedAttributes);
-          
-          // Return enhanced listing
-          return {
-            ...listing,
-            name: properName,
-            type: properAssetType,
-            category: properAssetType,
-            attributes: enhancedAttributes
-          };
-        });
-        
-        // Check if the cached data is real contract data or dummy data
-        const isRealData = isRealContractData(enhancedCachedListings);
-        console.log(`🔍 Cached data validation: isRealData=${isRealData}`);
-        
-        setListings(enhancedCachedListings);
-        
-        // Only turn off loading if we have real contract data
-        if (isRealData) {
-          setLoading(false);
-          setHasRealContractData(true);
-          console.log('✅ Real contract data found in cache - turning off loading state');
-        } else {
-          console.log('⚠️ Cached data appears to be dummy/placeholder - keeping loading state until real data arrives');
-          // Keep loading state true, but show cached data temporarily
-          setHasRealContractData(false);
-        }
-        
-        setIsFromCache(true);
-        setCacheAge(Date.now());
-        
-        // Update the cache with enhanced listings to prevent future processing
-        marketplaceCache.cacheMarketplaceListings(enhancedCachedListings);
-        console.log('💾 Updated marketplace cache with enhanced asset names and types');
-        
-        // Show success toast for instant loading (only if real data)
-        if (isRealData) {
-          toast.success(`Marketplace loaded with ${enhancedCachedListings.length} assets`);
-        } else {
-          toast.loading('Loading marketplace data...');
-        }
-
-       
-        // Background refresh logic
-        if (isRealData) {
-          // Optionally refresh in background after 60 seconds for updated data (increased delay)
-          const backgroundRefreshTimeout = setTimeout(() => {
-            // Only refresh if we're still showing cached data and user is still on marketplace
-            if (isFromCache && !document.hidden) {
-              console.log('🔄 Background marketplace refresh starting...');
-              loadMarketplaceListings(true);
-            } else {
-              console.log('⏭️ Skipping background refresh - user navigated away or fresh data already loaded');
-            }
-          }, 60000); // Increased to 60 seconds
-          
-          // Store timeout ID for potential cleanup
-          return () => clearTimeout(backgroundRefreshTimeout);
-        } else {
-          // If cached data is dummy, fetch fresh data immediately
-          console.log('🚀 Cached data is dummy - fetching fresh contract data immediately...');
-          setTimeout(() => {
-            if (!document.hidden) {
-              loadMarketplaceListings(true);
-            }
-          }, 1000); // Short delay to show cached data briefly
-        }
-        
-        return;
-      } else {
-        console.log('📭 No valid marketplace cache found, fetching from blockchain...');
-      }
-    }
-
-    if (!marketplaceContract) {
-      console.log('⚠️ Marketplace contract not initialized');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setIsFromCache(false);
-    
-    let fetchedRealData = false; // Track if we successfully fetched real data
-    
-    try {
-      console.log('🔄 Loading marketplace listings from contract...');
-      
-      // Call getAllListings from marketplace contract with retry logic
-      let listingsData;
-      let lastError;
-      
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          console.log(`📞 Calling getAllListings (attempt ${attempt}/3)...`);
-          listingsData = await marketplaceContract.getAllListings();
-          console.log('📦 Raw listings data:', listingsData);
-          console.log('📦 Raw listings data type:', typeof listingsData);
-          console.log('📦 Raw listings data is array:', Array.isArray(listingsData));
-          if (Array.isArray(listingsData)) {
-            console.log('📦 Raw listings data length:', listingsData.length);
-            listingsData.forEach((item, index) => {
-              console.log(`📦 Item ${index}:`, item, 'Type:', typeof item, 'IsArray:', Array.isArray(item));
-            });
-          }
-          break;
-        } catch (callError: any) {
-          console.warn(`⚠️ getAllListings attempt ${attempt} failed:`, callError);
-          lastError = callError;
-          
-          // If this is a missing trie node error, try with fallback RPC provider
-          if (callError.message?.includes('missing trie node') && attempt < 3) {
-            console.log('🔄 Trying with fallback RPC provider...');
-            try {
-              const fallbackProvider = new ethers.providers.JsonRpcProvider(
-                U2U_NEBULAS_TESTNET_RPC_URLS[attempt % U2U_NEBULAS_TESTNET_RPC_URLS.length]
-              );
-              const fallbackContract = new ethers.Contract(MARKETPLACE_CONTRACT, MARKETPLACE_ABI, fallbackProvider);
-              listingsData = await fallbackContract.getAllListings();
-              console.log('✅ Success with fallback RPC provider!');
-              break;
-            } catch (fallbackError) {
-              console.warn('❌ Fallback RPC also failed:', fallbackError);
-            }
-          }
-          
-          if (attempt === 3) {
-            // On final attempt, check if it's a network/state issue
-            if (callError.code === 'CALL_EXCEPTION' || callError.message?.includes('missing trie node')) {
-              throw new Error('Network synchronization issue. Please try again in a few minutes.');
-            } else if (callError.message?.includes('revert')) {
-              throw new Error('Smart contract call failed. The marketplace may be paused or have no listings.');
-            } else {
-              throw callError;
-            }
-          }
-          
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-      
-      if (!listingsData) {
-        throw new Error('Failed to get listings data after 3 attempts');
+      if (maxRoyalty < 100) {
+        params.append('maxRoyalty', maxRoyalty.toString());
       }
 
-      console.log('🔍 Analyzing getAllListings response structure:', listingsData);
-      console.log('📊 Response type:', typeof listingsData);
-      console.log('📊 Is array:', Array.isArray(listingsData));
-      console.log('📊 Response length:', listingsData.length);
-      console.log('📊 First element:', listingsData[0]);
-      
-      // Handle different response formats from getAllListings
-      let tokenIds, issuers, amounts, prices;
-      
-      if (Array.isArray(listingsData)) {
-        // Check if it's the expected 4-array format or just token IDs
-        if (listingsData.length === 4 && Array.isArray(listingsData[0])) {
-          // Expected format: [tokenIds[], issuers[], amounts[], prices[]]
-          [tokenIds, issuers, amounts, prices] = listingsData;
-          console.log('✅ Successfully extracted 4 arrays from response');
-        } else if (listingsData.length > 0 && listingsData[0]?._isBigNumber) {
-          // Contract is only returning token IDs - fetch other data manually
-          console.log('⚠️ Contract returned only token IDs, fetching additional data...');
-          tokenIds = listingsData;
-          issuers = [];
-          amounts = [];
-          prices = [];
-          
-          // Fetch individual listing data for each token
-          for (let i = 0; i < tokenIds.length; i++) {
-            try {
-              const tokenId = tokenIds[i].toString();
-              console.log(`🔍 Fetching listing data for token ${tokenId}...`);
-              
-              // Get listing data from contract
-              const listing = await marketplaceContract.listings(tokenId);
-              console.log(`📋 Listing for token ${tokenId}:`, listing);
-              
-              issuers.push(listing.issuer);
-              amounts.push(listing.amount);
-              
-              // Try to get price from token contract
-              try {
-                const tokenContractAddress = await marketplaceContract.tokenContract();
-                const tokenContract = new ethers.Contract(tokenContractAddress, TOKEN_ABI, marketplaceContract.provider);
-                const tokenPrice = await tokenContract.tokenPrice(tokenId);
-                prices.push(tokenPrice);
-                console.log(`💰 Token ${tokenId} price: ${ethers.utils.formatEther(tokenPrice)} Flow`);
-              } catch (priceError) {
-                console.warn(`⚠️ Could not fetch price for token ${tokenId}:`, priceError);
-                prices.push(ethers.utils.parseEther("1000")); // Default price
-              }
-              
-            } catch (tokenError) {
-              console.error(`❌ Error fetching data for token ${tokenIds[i]}:`, tokenError);
-              // Use default values
-              issuers.push("0x0000000000000000000000000000000000000000");
-              amounts.push(ethers.BigNumber.from(0));
-              prices.push(ethers.utils.parseEther("1000"));
-            }
-          }
-        } else {
-          console.error('❌ Unexpected response structure from getAllListings');
-          console.log('Expected: 4 arrays [tokenIds, issuers, amounts, prices] or array of token IDs');
-          console.log('Received:', listingsData);
-          throw new Error('Invalid response structure from marketplace contract');
-        }
-      } else {
-        throw new Error('getAllListings did not return an array');
-      }
-      
-      console.log('📊 Extracted data:');
-      console.log('- Token IDs:', tokenIds);
-      console.log('- Issuers:', issuers);
-      console.log('- Amounts:', amounts);
-      console.log('- Prices:', prices);
+      console.log('🔍 Fetching licensed IPs with params:', params.toString());
 
-      if (!tokenIds || tokenIds.length === 0) {
-        console.log('ℹ️ No listings found in marketplace');
-        setListings([]);
-        setLoading(false);
-        toast.info('No assets currently listed on the marketplace');
-        return;
+      const response = await fetch(`${BACKEND_API_URL}/marketplace/licensed?${params}`);
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
       }
+
+      const result: MarketplaceResponse = await response.json();
+
+      if (!result.success) {
+        throw new Error('Failed to fetch licensed IPs');
+      }
+
+      console.log('✅ Fetched licensed IPs:', result.data);
 
       console.log(`📊 Found ${tokenIds.length} listings in marketplace`);
       
@@ -1285,48 +521,45 @@ const Marketplace: React.FC = () => {
       }
     }
   };
+      setLicensedIPs(result.data.ips);
+      setTotalPages(result.data.pagination.totalPages);
+      setLoading(false);
 
-  // Debug helper functions
-  const debugMarketplaceCache = () => {
-    const cached = marketplaceCache.getCachedMarketplaceListings();
-    console.log('🔍 Debug: Current marketplace cache:', cached);
-    if (cached) {
-      const isReal = isRealContractData(cached);
-      console.log('🔍 Debug: Cache contains real data:', isReal);
+    } catch (err: any) {
+      console.error('❌ Error fetching licensed IPs:', err);
+      setError(err.message || 'Failed to load marketplace');
+      setLoading(false);
+      toast.error('Failed to load marketplace');
     }
-    return cached;
   };
 
-  const clearMarketplaceCacheDebug = () => {
-    console.log('🗑️ Debug: Clearing marketplace cache...');
-    marketplaceCache.clearCache();
-    console.log('✅ Debug: Marketplace cache cleared');
-    // Reset states
-    setHasRealContractData(false);
-    setIsFromCache(false);
-    // Reload from network
-    loadMarketplaceListings(true);
+  // Load licensed IPs on mount and when filters change
+  useEffect(() => {
+    fetchLicensedIPs();
+  }, [currentPage, licenseTypeFilter, commercialUseFilter, maxRoyalty]);
+
+  // ========================================
+  // BUY LICENSE HANDLER (Non-functional placeholder)
+  // ========================================
+  const handleBuyLicense = (ip: LicensedIP) => {
+    console.log('📝 Buy license requested for:', ip);
+    toast.info('Buy License feature coming soon! Backend will provide contract call service.', {
+      description: `License for: ${ip.originalFilename || `IP Asset #${ip.tokenId}`}`,
+      duration: 4000,
+    });
+    // TODO: Backend will provide service layer contract call to mint license
   };
 
-  const clearDummyCacheData = () => {
-    const cached = marketplaceCache.getCachedMarketplaceListings();
-    if (cached && !isRealContractData(cached)) {
-      console.log('🗑️ Clearing dummy cache data...');
-      marketplaceCache.clearCache();
-      setHasRealContractData(false);
-      setIsFromCache(false);
-      console.log('✅ Dummy cache data cleared');
-      return true;
-    }
-    return false;
-  };
+  // ========================================
+  // RENDER FUNCTIONS
+  // ========================================
 
-  // Make debug functions available globally for testing
-  React.useEffect(() => {
-    (window as any).debugMarketplaceCache = debugMarketplaceCache;
-    (window as any).clearMarketplaceCacheDebug = clearMarketplaceCacheDebug;
-    (window as any).clearDummyCacheData = clearDummyCacheData;
-  }, []);
+  const renderFilters = () => (
+    <div className="bg-white/60 rounded-lg shadow-sm p-6 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Filter className="w-5 h-5 text-gray-600" />
+        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+      </div>
 
   const handleMintLicense = async (listing: MarketplaceListing, amount: number) => {
     if (!signer) {
@@ -1361,318 +594,133 @@ const Marketplace: React.FC = () => {
     loadMarketplaceListings(true);
     toast.success('Purchase completed! Refreshing marketplace...');
   };
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* License Type Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            License Type
+          </label>
+          <Select value={licenseTypeFilter} onValueChange={setLicenseTypeFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="commercial_remix">Commercial Remix</SelectItem>
+              <SelectItem value="non_commercial">Non-Commercial</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
- if (loading) {
-  return (
-    // Main container with a positioning context
-    <div className="relative min-h-screen h-screen w-full bg-white">
-      
-      {/* Background layer with the beams */}
-      <div className="absolute inset-0 z-0">
-        <BackgroundBeamsWithCollision>
-          {/* ✅ We must pass children to satisfy TypeScript.
-            An empty fragment is perfect here since we don't need to render anything inside it.
-          */}
-          <></>
-        </BackgroundBeamsWithCollision>
-      </div>
+        {/* Commercial Use Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Commercial Use
+          </label>
+          <Select value={commercialUseFilter} onValueChange={setCommercialUseFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
+              <SelectItem value="non-commercial">Non-Commercial</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Foreground layer with the spinner, guaranteed to be on top */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-          <div className="text-black text-xl font-medium">
-            {hasRealContractData ? 'Loading marketplace...' : 'Fetching contract data...'}
-          </div>
-          <div className="text-gray-600 text-sm">
-            {hasRealContractData ? 'Please wait' : 'Getting real asset data from blockchain'}
-          </div>
+        {/* Max Royalty Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Max Royalty: {maxRoyalty}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={maxRoyalty}
+            onChange={(e) => setMaxRoyalty(parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
         </div>
       </div>
 
+      <Button
+        onClick={() => {
+          setLicenseTypeFilter('all');
+          setCommercialUseFilter('all');
+          setMaxRoyalty(100);
+          setCurrentPage(1);
+        }}
+        variant="outline"
+        className="mt-4"
+      >
+        Reset Filters
+      </Button>
     </div>
   );
-}
 
-  if (error) {
-    return (
-      <div className="min-h-screen h-screen w-full bg-white flex items-center justify-center">
-        <BackgroundBeamsWithCollision>
-          <div className="flex flex-col items-center h-screen space-y-4 text-center max-w-md">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <div className="text-black text-xl font-medium">Connection Error</div>
-            <div className="text-gray-600 text-sm">{error}</div>
-            <div className="flex flex-col space-y-2">
-              {error.includes('Wrong network') && (
-                <button 
-                  onClick={async () => {
-                    try {
-                      const ethereum = (window as any).ethereum;
-                      if (ethereum) {
-                        // Try to switch to Flow Nebulas Testnet
-                        try {
-                          await ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: `0x${NETWORK_CONFIG[ACTIVE_NETWORK].chainId.toString(16)}` }],
-                          });
-                          toast.success('Switched to Flow Mainnet!');
-                          setError('');
-                          initializeContract();
-                        } catch (switchError: any) {
-                          // If network doesn't exist, add it
-                          if (switchError.code === 4902) {
-                            await ethereum.request({
-                              method: 'wallet_addEthereumChain',
-                              params: [{
-                                chainId: `0x${NETWORK_CONFIG[ACTIVE_NETWORK].chainId.toString(16)}`,
-                                chainName: NETWORK_CONFIG[ACTIVE_NETWORK].name,
-                                nativeCurrency: NETWORK_CONFIG[ACTIVE_NETWORK].nativeCurrency,
-                                rpcUrls: [NETWORK_CONFIG[ACTIVE_NETWORK].rpcUrl],
-                                blockExplorerUrls: [NETWORK_CONFIG[ACTIVE_NETWORK].blockExplorer]
-                              }]
-                            });
-                            toast.success('Flow Mainnet added to wallet!');
-                            setError('');
-                            initializeContract();
-                          }
-                        }
-                      }
-                    } catch (error) {
-                      console.error('Failed to switch network:', error);
-                      toast.error('Failed to switch network. Please switch manually.');
-                    }
-                  }}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                  <span>Switch to Flow Mainnet</span>
-                </button>
+  const renderIPCard = (ip: LicensedIP) => (
+    <Card key={ip.nonce} className="hover:shadow-lg transition-shadow ">
+      <CardHeader>
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <CardTitle className="text-lg font-bold line-clamp-1">
+              {ip.originalFilename || `IP Asset #${ip.tokenId}`}
+            </CardTitle>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant={ip.license.licenseType === 'commercial_remix' ? 'default' : 'secondary'}>
+                {ip.license.licenseType === 'commercial_remix' ? 'Commercial Remix' : 'Non-Commercial'}
+              </Badge>
+              {ip.license.royaltyPercent > 0 && (
+                <Badge variant="outline" className="text-green-600">
+                  {ip.license.royaltyPercent}% Royalty
+                </Badge>
               )}
-              
-              {/* Debug button to check contract manually */}
-              <button 
-                onClick={() => {
-                  const explorerUrl = `${NETWORK_CONFIG[ACTIVE_NETWORK].blockExplorer}/address/${MARKETPLACE_CONTRACT}`;
-                  console.log('🔗 Opening contract in explorer:', explorerUrl);
-                  window.open(explorerUrl, '_blank');
-                }}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                <span>Verify Contract on Explorer</span>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  setError('');
-                  initializeContract();
-                }} 
-                className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Retry Connection
-              </button>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Refresh Page
-              </button>
             </div>
           </div>
-        </BackgroundBeamsWithCollision>
-      </div>
-    );
-  }
-
-  // Filter listings by category
-  const realEstateListings = listings?.filter(listing => {
-    const assetType = listing.attributes?.find(attr => 
-      attr.trait_type === 'Asset Type'
-    )?.value;
-    return assetType?.toLowerCase() === 'real estate';
-  }) || [];
-
-  const invoiceListings = listings?.filter(listing => {
-    const assetType = listing.attributes?.find(attr => 
-      attr.trait_type === 'Asset Type'
-    )?.value;
-    return assetType?.toLowerCase() === 'invoice';
-  }) || [];
-
-  const commodityListings = listings?.filter(listing => {
-    const assetType = listing.attributes?.find(attr => 
-      attr.trait_type === 'Asset Type'
-    )?.value;
-    return assetType?.toLowerCase() === 'commodity';
-  }) || [];
-
-  const stockListings = listings?.filter(listing => {
-    const assetType = listing.attributes?.find(attr => 
-      attr.trait_type === 'Asset Type'
-    )?.value;
-    return assetType?.toLowerCase() === 'stocks';
-  }) || [];
-
-  const carbonCreditListings = listings?.filter(listing => {
-    const assetType = listing.attributes?.find(attr => 
-      attr.trait_type === 'Asset Type'
-    )?.value;
-    return assetType?.toLowerCase() === 'carboncredit';
-  }) || [];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50/30 to-gray-100">
-      {/* Professional Header */}
-                        <HeroBackground />
-
-      <header className="backdrop-blur-lg bg-white/90 border-b border-gray-200/60 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div 
-              className="flex items-center space-x-3 cursor-pointer group"
-              onClick={() => navigate('/')}
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-black rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </div>
-              
-            </div>
-            
-            <div className="flex items-center space-x-4">
-  {/* Register Asset Button */}
-  <button
-    onClick={() => navigate('/issuer', { state: { from: '/marketplace' } })}
-    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
-  >
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 4v16m8-8H4"
-      />
-    </svg>
-    <span className="font-medium">Register Asset</span>
-  </button>
-
-  {/* Dashboard Button */}
-  <button
-    onClick={() => navigate('/dashboard')}
-    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
-  >
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-      />
-    </svg>
-    <span className="font-medium">My Dashboard</span>
-  </button>
-</div>
-
-          </div>
-        </div>
-      </header>
-
-      {/* Demo Data Warning Banner */}
-      {error && error.includes('demo') && (
-        <div className="bg-yellow-50 border border-yellow-200 px-6 py-4">
-          <div className="container mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-yellow-800 font-medium">Demo Mode Active</h3>
-                  <p className="text-yellow-700 text-sm">{error}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => {
-                    setError('');
-                    initializeContract();
-                  }}
-                  className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Retry Live Data</span>
-                </button>
-                <button
-                  onClick={() => setError('')}
-                  className="p-2 text-yellow-600 hover:text-yellow-800 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Featured Properties Carousel */}
-      <div className="container mx-auto px-6 pt-8 pb-12">
-        <FeaturedPropertiesCarousel 
-          listings={listings.slice(0, 3)} 
-          onSelectListing={setSelectedListing}
-          onViewDetails={setShowDetails}
-          tokenPrice={ethPrice}
-        />
-        
-        {/* See All Listings Section */}
-        <div className="mt-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">See All Listings</h2>
-              <p className="text-gray-600">Explore our complete collection of tokenized real-world assets</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => loadMarketplaceListings(true)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-2"
-                title="Refresh listings"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-              <button className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-              </button>
-              <button className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <Award className="w-6 h-6 text-blue-600 flex-shrink-0" />
         </div>
 
-        {/* Professional Tabs */}
-        <Tabs defaultValue="invoices" className="w-full">
-          
+        {/* IPFS Image Preview */}
+        <div className="w-full h-48 bg-gray-100 rounded-md overflow-hidden">
+          <img
+            src={ip.ipfsUrl ? ip.ipfsUrl.replace('ipfs://', 'https://ipfs.io/ipfs/') : 'https://via.placeholder.com/400x300?text=IP+Asset'}
+            alt={ip.originalFilename || `IP Asset #${ip.tokenId}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=IP+Asset';
+            }}
+          />
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        <div className="space-y-2 text-sm">
+          {ip.ipId && (
+            <div className="flex justify-between">
+              <span className="text-gray-500">IP ID:</span>
+              <span className="font-mono text-gray-900 truncate ml-2" title={ip.ipId}>
+                {ip.ipId.slice(0, 10)}...
+              </span>
+            </div>
+          )}
+
+          {ip.tokenId && (
+            <div className="flex justify-between">
+              <span className="text-gray-500">Token ID:</span>
+              <span className="font-mono text-gray-900">#{ip.tokenId}</span>
+            </div>
+          )}
+
+          {ip.license.licenseTermsId && (
+            <div className="flex justify-between">
+              <span className="text-gray-500">License ID:</span>
+              <span className="font-mono text-gray-900 truncate ml-2" title={ip.license.licenseTermsId}>
+                {ip.license.licenseTermsId}
+              </span>
+            </div>
+          )}
 
         
           <TabsContent value="invoices">
@@ -1738,5 +786,164 @@ const Marketplace: React.FC = () => {
     </div>
   );
 }
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500">Derivatives:</span>
+            <Badge variant={ip.license.allowDerivatives ? 'default' : 'secondary'} className="text-xs">
+              {ip.license.allowDerivatives ? '✓ Allowed' : '✗ Not Allowed'}
+            </Badge>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500">Commercial:</span>
+            <Badge variant={ip.license.commercialUse ? 'default' : 'secondary'} className="text-xs">
+              {ip.license.commercialUse ? '✓ Yes' : '✗ No'}
+            </Badge>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex flex-col gap-2">
+        <Button
+          onClick={() => handleBuyLicense(ip)}
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+        >
+          <Shield className="w-4 h-4 mr-2" />
+          Buy License
+        </Button>
+        {ip.creatorAddress && (
+          <p className="text-xs text-gray-500 text-center">
+            Created by: {ip.creatorAddress.slice(0, 6)}...{ip.creatorAddress.slice(-4)}
+          </p>
+        )}
+      </CardFooter>
+    </Card>
+  );
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-center gap-4 mt-8">
+        <Button
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+          variant="outline"
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Previous
+        </Button>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </span>
+        </div>
+
+        <Button
+          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          disabled={currentPage === totalPages}
+          variant="outline"
+        >
+          Next
+          <ChevronRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    );
+  };
+
+  // ========================================
+  // MAIN RENDER
+  // ========================================
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <HeroBackground />
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Licensed IP Marketplace
+          </h1>
+          <p className="text-lg text-gray-600">
+            Discover and license intellectual property assets on Story Protocol
+          </p>
+          
+          
+         
+       </div>
+      <div className="absolute top-9 right-4 z-20">
+        <Button className='bg-black' onClick={handlenavigate}>
+          Go to Dashboard
+        </Button>
+      </div>
+
+       
+
+        {/* Filters */}
+        {renderFilters()}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading licensed IP assets...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <Card className="border border-red-200 bg-red-50">
+            <CardContent className="p-12 text-center">
+              <Award className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Marketplace</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={fetchLicensedIPs} variant="outline">
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && licensedIPs.length === 0 && (
+          <Card className="border border-dashed border-gray-300 w-full">
+            <CardContent className="p-12 text-center">
+              <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No Licensed IPs Available</h3>
+              <p className="text-gray-600 mb-4">
+                No IP assets match your current filters. Try adjusting the filters or check back later.
+              </p>
+              <Button
+                onClick={() => navigate('/issuer')}
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Register Your IP Asset
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* IP Assets Grid */}
+        {!loading && !error && licensedIPs.length > 0 && (
+          <>
+            <div className="mb-4 text-sm text-gray-600">
+              Showing {licensedIPs.length} licensed IP asset{licensedIPs.length !== 1 ? 's' : ''}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {licensedIPs.map(renderIPCard)}
+            </div>
+
+            {/* Pagination */}
+            {renderPagination()}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default Marketplace;

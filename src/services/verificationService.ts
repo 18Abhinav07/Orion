@@ -261,7 +261,11 @@ export class VerificationService {
     data: any;
   }> {
     const token = localStorage.getItem('token');
-    
+
+    // Derive allowDerivatives and commercialUse from licenseType
+    const allowDerivatives = true; // Both license types allow derivatives
+    const commercialUse = params.licenseType === 'commercial_remix';
+
     const response = await fetch(
       `${BACKEND_API_URL}/verification/token/${params.nonce}/finalize`,
       {
@@ -277,16 +281,18 @@ export class VerificationService {
           licenseTermsId: params.licenseTermsId,
           licenseType: params.licenseType,
           royaltyPercent: params.royaltyPercent,
+          allowDerivatives: allowDerivatives,
+          commercialUse: commercialUse,
           licenseTxHash: params.licenseTxHash
         })
       }
     );
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || `Failed to finalize mint: ${response.statusText}`);
     }
-    
+
     return response.json();
   }
 }

@@ -348,7 +348,23 @@ const NewIssuerDashboard: React.FC = () => {
       console.log('Recipient:', userAddress);
       console.log('Metadata:', ipMetadata);
 
-      // Call RegistrationWorkflows directly with user's wallet
+      // STEP 1: Use callStatic to predict return values (ipId, tokenId)
+      // This simulates the transaction without sending it
+      setMintingStatus('🔮 Simulating transaction to get return values...');
+      const { ipId: predictedIpId, tokenId: predictedTokenId } = await workflowsContract.callStatic.mintAndRegisterIp(
+        SPG_NFT_CONTRACT,
+        userAddress,
+        ipMetadata,
+        true // allowDuplicates
+      );
+
+      console.log('✅ Predicted return values:', {
+        ipId: predictedIpId,
+        tokenId: predictedTokenId.toString()
+      });
+
+      // STEP 2: Send the actual transaction
+      setMintingStatus('⛓️ Sending transaction to blockchain...');
       const tx = await workflowsContract.mintAndRegisterIp(
         SPG_NFT_CONTRACT,
         userAddress,
@@ -365,24 +381,9 @@ const NewIssuerDashboard: React.FC = () => {
       const receipt = await tx.wait();
       console.log('✅ Transaction confirmed!', receipt);
 
-      // Parse events to get ipId and tokenId
-      let ipId = '';
-      let tokenId = 0;
-
-      for (const log of receipt.logs) {
-        try {
-          const parsedLog = workflowsContract.interface.parseLog(log);
-          console.log('Parsed log:', parsedLog);
-        } catch (e) {
-          // Try to find token ID from logs
-          if (log.topics.length >= 4) {
-            tokenId = parseInt(log.topics[3], 16);
-          }
-        }
-      }
-
-      // Use transaction hash as placeholder for IP ID if not found
-      ipId = receipt.contractAddress || `IP-${receipt.transactionHash.slice(0, 10)}`;
+      // Use the predicted values (they're deterministic)
+      const ipId = predictedIpId;
+      const tokenId = predictedTokenId.toNumber();
 
       const mintingResult = {
         ipId,
@@ -392,17 +393,22 @@ const NewIssuerDashboard: React.FC = () => {
 
       console.log('✅ Mint result:', mintingResult);
 
-      // Update backend with result (non-critical)
+      // Update backend with result - THIS IS CRITICAL for asset tracking
       try {
+        setMintingStatus('💾 Updating backend with IP ID...');
         await verificationService.updateTokenAfterMint({
           nonce: token.nonce,
           ipId: mintingResult.ipId,
           tokenId: mintingResult.tokenId,
           txHash: mintingResult.txHash
         });
-        console.log('✅ Backend updated successfully');
+        console.log('✅ Backend updated successfully with IP ID and token ID');
+        setMintingStatus('✅ Backend updated! IP Asset registered successfully.');
       } catch (backendError: any) {
-        console.warn('⚠️ Backend update failed (non-critical):', backendError.message);
+        console.error('❌ Backend update failed:', backendError);
+        setMintingStatus('⚠️ IP minted but backend update failed. Asset may show as pending.');
+        // Don't throw - allow user to continue with license attachment
+        // They can use the "Find Missing IP IDs" tool later
       }
 
       setMintingStatus('✅ IP Asset Registered! Configure license terms below.');
@@ -492,11 +498,13 @@ const NewIssuerDashboard: React.FC = () => {
         licenseConfig.type,
         licenseConfig.royaltyPercent
       );
+      console.log('✅ License terms ID:', licenseTermsId);
 
       setMintingStatus('Attaching license to IP asset on-chain...');
       const attachTx = await attachLicenseTermsToIp(mintResult.ipId, licenseTermsId);
+      console.log('✅ License attached on-chain! TX:', attachTx.txHash);
 
-      setMintingStatus('Finalizing registration with backend...');
+      setMintingStatus('💾 Finalizing registration with backend...');
       await verificationService.finalizeMint({
         nonce: mintToken.nonce,
         ipId: mintResult.ipId,
@@ -507,8 +515,9 @@ const NewIssuerDashboard: React.FC = () => {
         royaltyPercent: licenseConfig.royaltyPercent,
         licenseTxHash: attachTx.txHash
       });
+      console.log('✅ Backend finalized successfully with license info');
 
-      setMintingStatus('🎉 SUCCESS! IP is fully registered with license terms.');
+      setMintingStatus('🎉 SUCCESS! IP fully registered with license terms in backend.');
       setFinalResult({ ...mintResult, licenseTermsId, licenseTxHash: attachTx.txHash });
       setShowLicenseConfig(false);
       toast.success('🎉 License attached successfully! IP Asset is fully registered.');
@@ -521,6 +530,9 @@ const NewIssuerDashboard: React.FC = () => {
           title: requestForm.title,
           description: requestForm.description,
           assetType: requestForm.assetType,
+          contentHash: contentHash,
+          ipMetadataURI: ipMetadataURI,
+          nftMetadataURI: nftMetadataURI,
           txHash: mintResult.txHash,
           licenseTxHash: attachTx.txHash,
           licenseTermsId,
@@ -641,11 +653,11 @@ const NewIssuerDashboard: React.FC = () => {
       
       <div className="container mx-auto px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
         <div className="mb-8">
-          {/* Back Button */}x
+        
           <Button
             variant="ghost"
             onClick={handleBack}
-            className="mb-4 hover:bg-gray-100"
+            className="mb-4 hover:bg-gray-200 text-gray-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
