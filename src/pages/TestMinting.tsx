@@ -152,21 +152,32 @@ export default function TestMinting() {
       
       // Upload metadata to IPFS via Pinata
       console.log('📤 Uploading IP metadata to Pinata...');
-      const calculatedIpMetadataURI = await uploadJSONToIPFS(ipMetadata, `ip-metadata-${calculatedContentHash}`);
+      console.log('IP Metadata:', ipMetadata);
+      let calculatedIpMetadataURI: string;
+      let calculatedNftMetadataURI: string;
+      
+      try {
+        calculatedIpMetadataURI = await uploadJSONToIPFS(ipMetadata, `ip-metadata-${calculatedContentHash}`);
+        console.log(`✅ IP Metadata uploaded: ${calculatedIpMetadataURI}`);
+      } catch (uploadError) {
+        console.error('❌ Failed to upload IP metadata to Pinata:', uploadError);
+        throw new Error(`IPFS upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+      }
       
       console.log('📤 Uploading NFT metadata to Pinata...');
-      const calculatedNftMetadataURI = await uploadJSONToIPFS(nftMetadata, `nft-metadata-${calculatedContentHash}`);
+      console.log('NFT Metadata:', nftMetadata);
       
-      console.log(`✅ IP Metadata URI: ${calculatedIpMetadataURI}`);
-      console.log(`✅ NFT Metadata URI: ${calculatedNftMetadataURI}`);
+      try {
+        calculatedNftMetadataURI = await uploadJSONToIPFS(nftMetadata, `nft-metadata-${calculatedContentHash}`);
+        console.log(`✅ NFT Metadata uploaded: ${calculatedNftMetadataURI}`);
+      } catch (uploadError) {
+        console.error('❌ Failed to upload NFT metadata to Pinata:', uploadError);
+        throw new Error(`IPFS upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+      }
       
       // Store in state for later use
       setIpMetadataURI(calculatedIpMetadataURI);
       setNftMetadataURI(calculatedNftMetadataURI);
-      
-      // TODO: Replace with real IPFS upload
-      // const calculatedIpMetadataURI = await uploadToIPFS(ipMetadata);
-      // const calculatedNftMetadataURI = await uploadToIPFS(nftMetadata);
 
       // 🔥 DETECTION ENGINE: Check similarity BEFORE minting
       setStatus('🔍 Checking for similar content (RAG Detection Engine)...');
