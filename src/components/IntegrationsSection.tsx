@@ -25,9 +25,9 @@ const IntegrationsSection = () => {
 
 
   const features = [
-    "Seamless Automation",
-    "Real-Time Data Sync", 
-    "Customizable Solutions"
+    "On-Chain Provenance",
+    "Automated Royalties",
+    "Derivative Tracking"
   ];
 
   return (
@@ -53,10 +53,10 @@ const IntegrationsSection = () => {
           {/* Header */}
           <div className="text-center mb-16">
             <div className="inline-block bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium text-gray-700 mb-6">
-              Integrations
+              Story Protocol Integration
             </div>
            <h2 className="font-['Plus_Jakarta_Sans'] mb-2  text-[#0e1c29] text-[44px] not-italic font-normal h-[52.8px] tracking-[-0.44px] leading-[52.8px]">
-  Integrates with
+  Deeply Integrated with Story Protocol
 </h2>
           </div>
 

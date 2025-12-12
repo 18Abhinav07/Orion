@@ -25,21 +25,21 @@ const ReviewsSection = () => {
 
   const reviews = [
     {
-      name: "Sarah Johnson",
-      role: "CEO at TechCorp",
-      content: "Orion transformed how we handle data analytics. The AI insights have helped us make better decisions and save countless hours.",
+      name: "Alex 'BeatMaster' Reed",
+      role: "Independent Musician",
+      content: "IP-OPS with Story Protocol has been a game-changer for my music. Registering my tracks on-chain and seeing royalties flow directly has brought a level of transparency and control I never thought possible. No more opaque record deals!",
       rating: 5
     },
     {
-      name: "Michael Chen",
-      role: "CTO at InnovateLabs",
-      content: "The platform is incredibly intuitive and powerful. Our team was up and running in minutes, not days.",
+      name: "Maya 'PixelDreams' Singh",
+      role: "Digital Artist & NFT Creator",
+      content: "As a digital artist, protecting my work is crucial. IP-OPS's derivative tracking is incredible; it ensures that even remixes and adaptations of my art give proper attribution and royalties. It’s truly empowering!",
       rating: 5
     },
     {
-      name: "Emily Rodriguez",
-      role: "Product Manager at ScaleUp",
-      content: "Best investment we've made this year. The ROI was evident within the first month of using Orion.",
+      name: "Dr. Ben Carter",
+      role: "Academic Author & Researcher",
+      content: "The on-chain provenance provided by IP-OPS is invaluable for academic integrity. Registering my research papers secures my authorship and allows for clear licensing terms for collaborations and further studies. A revolutionary tool for creators.",
       rating: 5
     }
   ];
@@ -58,10 +58,10 @@ const ReviewsSection = () => {
       <div className="max-w-[1200px] mx-auto px-6 relative z-10">
         <div className="text-center mb-16 opacity-0" data-scroll-reveal>
           <h2 className="font-jakarta text-5xl md:text-[56px] font-italic text-foreground mb-4">
-            Loved by thousands of teams
+            Creators Trust IP-OPS.
           </h2>
           <p className="font-inter text-lg text-foreground/80 max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what our customers have to say.
+            Hear from artists, musicians, and innovators benefiting from transparent IP management.
           </p>
         </div>
 

@@ -25,6 +25,7 @@ import OrderBookPage from "./pages/orderbook/OrderBookPage";
 import TradingPage from "./pages/trading/TradingPage";
 import TestMinting from "./pages/TestMinting";
 import LicenseAttachment from "./pages/LicenseAttachment";
+import "./styles/HeroBackground.css";
 
 const App = () => {
 
@@ -79,17 +80,13 @@ const App = () => {
               <Route 
                 path="/dashboard" 
                 element={
-                  <ProtectedRoute allowedRoles={['admin', 'issuer', 'manager', 'user']}>
                     <Dashboard />
-                  </ProtectedRoute>
                 } 
               />
               <Route 
                 path="/marketplace" 
                 element={
-                  <ProtectedRoute allowedRoles={['admin', 'issuer', 'manager', 'user']}>
                     <Marketplace />
-                  </ProtectedRoute>
                 } 
               />
               <Route 
