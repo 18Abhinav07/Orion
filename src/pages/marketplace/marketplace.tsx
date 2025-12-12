@@ -164,12 +164,9 @@ const Marketplace: React.FC = () => {
       } 
     });
   };
-  const navigate = useNavigate();
 
   // Licensed IPs from backend API
   const [licensedIPs, setLicensedIPs] = useState<LicensedIP[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
 
   // Filters
   const [licenseTypeFilter, setLicenseTypeFilter] = useState<string>('all');
@@ -227,7 +224,12 @@ const Marketplace: React.FC = () => {
 
       console.log('✅ Fetched licensed IPs:', result.data);
 
-      console.log(`📊 Found ${tokenIds.length} listings in marketplace`);
+      // Set licensed IPs and pagination
+      setLicensedIPs(result.data.ips);
+      setTotalPages(result.data.pagination.totalPages);
+      setLoading(false);
+
+      console.log(`📊 Found ${result.data.ips.length} licensed IPs`);
       
       // Initialize token contract for metadata fetching with fallback
       let tokenContract;
@@ -521,17 +523,6 @@ const Marketplace: React.FC = () => {
       }
     }
   };
-      setLicensedIPs(result.data.ips);
-      setTotalPages(result.data.pagination.totalPages);
-      setLoading(false);
-
-    } catch (err: any) {
-      console.error('❌ Error fetching licensed IPs:', err);
-      setError(err.message || 'Failed to load marketplace');
-      setLoading(false);
-      toast.error('Failed to load marketplace');
-    }
-  };
 
   // Load licensed IPs on mount and when filters change
   useEffect(() => {
@@ -551,15 +542,8 @@ const Marketplace: React.FC = () => {
   };
 
   // ========================================
-  // RENDER FUNCTIONS
+  // HANDLER FUNCTIONS
   // ========================================
-
-  const renderFilters = () => (
-    <div className="bg-white/60 rounded-lg shadow-sm p-6 mb-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Filter className="w-5 h-5 text-gray-600" />
-        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-      </div>
 
   const handleMintLicense = async (listing: MarketplaceListing, amount: number) => {
     if (!signer) {
@@ -589,11 +573,22 @@ const Marketplace: React.FC = () => {
     // Clear marketplace cache since listings have changed
     console.log('🗑️ Clearing marketplace cache after successful purchase...');
     marketplaceCache.clearCache();
-    
-    // Reload listings after successful purchase (force refresh)
-    loadMarketplaceListings(true);
+
+    // Reload licensed IPs after successful purchase (force refresh)
+    fetchLicensedIPs();
     toast.success('Purchase completed! Refreshing marketplace...');
   };
+
+  // ========================================
+  // RENDER FUNCTIONS
+  // ========================================
+
+  const renderFilters = () => (
+    <div className="bg-white/60 rounded-lg shadow-sm p-6 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Filter className="w-5 h-5 text-gray-600" />
+        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* License Type Filter */}
         <div>
@@ -722,70 +717,6 @@ const Marketplace: React.FC = () => {
             </div>
           )}
 
-        
-          <TabsContent value="invoices">
-            <ProfessionalListingsGrid 
-              listings={invoiceListings} 
-              category="Invoices"
-              onSelectListing={setSelectedListing}
-              onNavigateToTrading={navigateToTradingTerminal}
-              tokenPrice={ethPrice}
-              loading={loading}
-              userLicenses={userLicenses}
-            />
-          </TabsContent>
-          
-        </Tabs>
-      </div>
-
-      {/* Buy Modal */}
-      {selectedListing && (
-        <BuyModal
-          asset={{
-            tokenId: selectedListing.tokenId,
-            name: selectedListing.name,
-            description: selectedListing.description,
-            price: selectedListing.price, // Price in Wei
-            amount: selectedListing.amount,
-            image: selectedListing.image,
-            seller: selectedListing.seller,
-            metadata: selectedListing.metadata
-          }}
-          onClose={() => setSelectedListing(null)}
-          onSuccess={handlePurchaseSuccess}
-          tokenPrice={ethPrice}
-        />
-      )}
-
-      {/* Details Modal */}
-      {showDetails && (
-        <ProfessionalExpandedDetail 
-          listing={showDetails} 
-          onClose={() => setShowDetails(null)}
-          onBuy={(listing) => {
-            setShowDetails(null);
-            setSelectedListing(listing);
-          }}
-          onNavigateToTrading={navigateToTradingTerminal}
-          tokenPrice={ethPrice}
-          onMintLicense={(listing) => {
-            setSelectedListingForLicense(listing);
-            setShowLicenseMintingModal(true);
-          }}
-        />
-      )}
-
-      {showLicenseMintingModal && selectedListingForLicense && (
-        <LicenseMintingModal
-          listing={selectedListingForLicense}
-          tokenPrice={ethPrice}
-          onClose={() => setShowLicenseMintingModal(false)}
-          onMint={handleMintLicense}
-        />
-      )}
-    </div>
-  );
-}
           <div className="flex justify-between items-center">
             <span className="text-gray-500">Derivatives:</span>
             <Badge variant={ip.license.allowDerivatives ? 'default' : 'secondary'} className="text-xs">
@@ -940,6 +871,34 @@ const Marketplace: React.FC = () => {
             {/* Pagination */}
             {renderPagination()}
           </>
+        )}
+
+        {/* Details Modal */}
+        {showDetails && (
+          <ProfessionalExpandedDetail
+            listing={showDetails}
+            onClose={() => setShowDetails(null)}
+            onBuy={(listing) => {
+              setShowDetails(null);
+              setSelectedListing(listing);
+            }}
+            onNavigateToTrading={navigateToTradingTerminal}
+            tokenPrice={ethPrice}
+            onMintLicense={(listing) => {
+              setSelectedListingForLicense(listing);
+              setShowLicenseMintingModal(true);
+            }}
+          />
+        )}
+
+        {/* License Minting Modal */}
+        {showLicenseMintingModal && selectedListingForLicense && (
+          <LicenseMintingModal
+            listing={selectedListingForLicense}
+            tokenPrice={ethPrice}
+            onClose={() => setShowLicenseMintingModal(false)}
+            onMint={handleMintLicense}
+          />
         )}
       </div>
     </div>
