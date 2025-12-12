@@ -41,11 +41,11 @@ const AENEID_CONFIG = {
 };
 
 const assetTypes = [
-  'Invoice',
+  
   'Artwork',
   'Codebase',
   'Document',
-  'Other'
+  
 ];
 
 interface TokenRequest {
@@ -269,7 +269,7 @@ const NewIssuerDashboard: React.FC = () => {
         contentHash: calculatedContentHash,
         ipMetadataURI: calculatedIpMetadataURI,
         nftMetadataURI: calculatedNftMetadataURI,
-        assetType: requestForm.assetType.toLowerCase() as 'video' | 'image' | 'audio' | 'text', // REQUIRED!
+        assetType: requestForm.assetType.toLowerCase() as 'text' | 'image' | 'audio' | 'video', // REQUIRED!
       });
 
       // Handle BLOCKED response (75%+ similarity)
@@ -650,35 +650,44 @@ const NewIssuerDashboard: React.FC = () => {
           <TabsContent value="create" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Register New IP Asset</CardTitle>
-                <CardDescription>This will register your IP directly on the Story Protocol Aeneid testnet.</CardDescription>
+              <CardTitle>Register New IP Asset</CardTitle>
+              <CardDescription>This will register your IP directly on the Story Protocol Aeneid testnet.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="title">IP Asset Title *</Label>
-                      <Input id="title" value={requestForm.title} onChange={(e) => setRequestForm(prev => ({ ...prev, title: e.target.value }))} placeholder="e.g., My Awesome Sci-Fi Novel" />
-                    </div>
-                    <div>
-                      <Label htmlFor="assetType">Asset Type *</Label>
-                      <Select value={requestForm.assetType} onValueChange={(value) => setRequestForm(prev => ({ ...prev, assetType: value }))}>
-                        <SelectTrigger><SelectValue placeholder="Select asset type" /></SelectTrigger>
-                        <SelectContent>{assetTypes.map((type) => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="description">Description *</Label>
-                      <Textarea id="description" value={requestForm.description} onChange={(e) => setRequestForm(prev => ({ ...prev, description: e.target.value }))} placeholder="A brief summary of your intellectual property." rows={4} />
-                    </div>
-                    <div>
-                      <Label htmlFor="image">Cover Image (Optional)</Label>
-                      <Input id="image" type="file" accept="image/*" onChange={(e) => { const files = Array.from(e.target.files || []); setRequestForm(prev => ({ ...prev, imageFiles: files })); }} />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title">IP Asset Title *</Label>
+                  <Input id="title" value={requestForm.title} onChange={(e) => setRequestForm(prev => ({ ...prev, title: e.target.value }))} placeholder="e.g., My Awesome Sci-Fi Novel" />
                 </div>
+                <div>
+                  <Label htmlFor="assetType">Asset Type *</Label>
+                  <Select value={requestForm.assetType} onValueChange={(value) => setRequestForm(prev => ({ ...prev, assetType: value }))}>
+                  <SelectTrigger><SelectValue placeholder="Select asset type" /></SelectTrigger>
+                  <SelectContent>{assetTypes.map((type) => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+                </div>
+                <div className="space-y-4">
+                <div>
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea id="description" value={requestForm.description} onChange={(e) => setRequestForm(prev => ({ ...prev, description: e.target.value }))} placeholder="A brief summary of your intellectual property." rows={4} />
+                </div>
+                <div>
+                  <Label htmlFor="document">Upload Document (Optional)</Label>
+                  <Input 
+                  id="document" 
+                  type="file" 
+                  accept=".txt,.md,.pdf,.doc,.docx,.odt,.rtf" 
+                  onChange={(e) => { 
+                    const files = Array.from(e.target.files || []); 
+                    setRequestForm(prev => ({ ...prev, imageFiles: files })); 
+                  }} 
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Supported formats: TXT, MD, PDF, DOC, DOCX, ODT, RTF</p>
+                </div>
+                </div>
+              </div>
 
                 <div className="flex flex-col items-center justify-center space-y-4">
                    <Button
