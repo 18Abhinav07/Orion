@@ -2,8 +2,7 @@ import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
-import { ping } from "./api/authApi";
+// import { ping } from "./api/authApi";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/marketplace/marketplace";
@@ -27,17 +26,6 @@ import TradingPage from "./pages/trading/TradingPage";
 import TestMinting from "./pages/TestMinting";
 
 const App = () => {
-  useEffect(() => {
-    // Initial ping
-    ping().catch(console.error);
-    
-    // Setup interval to ping every 5 minutes
-    const pingInterval = setInterval(() => {
-      ping().catch(console.error);
-    }, 5 * 60 * 1000); // 5 minutes
-
-    return () => clearInterval(pingInterval);
-  }, []);
 
   return (
   <TooltipProvider>

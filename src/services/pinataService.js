@@ -469,4 +469,115 @@ export { PinataService };
 export const KYCUserData = {};
 export const MerkleTreeData = {};
 
+// ============================================
+// Story Protocol Metadata Upload (JWT-based)
+// ============================================
+
+const PINATA_JWT = import.meta.env.VITE_PINATA_JWT;
+const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud';
+
+/**
+ * Upload JSON metadata to IPFS using JWT authentication
+ * @param {Object} data - JSON object to upload
+ * @param {string} [name] - Optional name for the pinned content
+ * @returns {Promise<string>} IPFS URI (ipfs://...)
+ */
+export async function uploadJSONToIPFS(data, name) {
+  if (!PINATA_JWT) {
+    throw new Error('Pinata JWT not configured. Please add VITE_PINATA_JWT to your .env file');
+  }
+
+  try {
+    const pinataData = {
+      pinataContent: data,
+      pinataMetadata: {
+        name: name || `metadata-${Date.now()}`,
+      },
+    };
+
+    const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PINATA_JWT}`,
+      },
+      body: JSON.stringify(pinataData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Pinata upload error:', errorText);
+      throw new Error(`Pinata upload failed: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const ipfsUri = `ipfs://${result.IpfsHash}`;
+    
+    console.log(`✅ Uploaded to IPFS: ${ipfsUri}`);
+    return ipfsUri;
+  } catch (error) {
+    console.error('Error uploading JSON to Pinata:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload a file to IPFS using JWT authentication
+ * @param {File} file - File object to upload
+ * @param {string} [name] - Optional name for the pinned content
+ * @returns {Promise<string>} IPFS URI (ipfs://...)
+ */
+export async function uploadFileToIPFS(file, name) {
+  if (!PINATA_JWT) {
+    throw new Error('Pinata JWT not configured. Please add VITE_PINATA_JWT to your .env file');
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const metadata = JSON.stringify({
+      name: name || file.name,
+    });
+    formData.append('pinataMetadata', metadata);
+
+    const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PINATA_JWT}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Pinata file upload error:', errorText);
+      throw new Error(`Pinata file upload failed: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const ipfsUri = `ipfs://${result.IpfsHash}`;
+    
+    console.log(`✅ Uploaded file to IPFS: ${ipfsUri}`);
+    return ipfsUri;
+  } catch (error) {
+    console.error('Error uploading file to Pinata:', error);
+    throw error;
+  }
+}
+
+/**
+ * Convert IPFS URI to HTTP gateway URL
+ * @param {string} ipfsUri - IPFS URI (ipfs://...)
+ * @returns {string} HTTP URL via Pinata gateway
+ */
+export function ipfsToGatewayUrl(ipfsUri) {
+  if (!ipfsUri.startsWith('ipfs://')) {
+    return ipfsUri;
+  }
+  
+  const hash = ipfsUri.replace('ipfs://', '');
+  return `${PINATA_GATEWAY}/ipfs/${hash}`;
+}
+
 export default pinataService;

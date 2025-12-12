@@ -90,10 +90,10 @@ export const NETWORK_CONFIG = {
     }
   },
   STORY_AENEID_TESTNET: {
-    chainId: 1315,
+    chainId: Number(import.meta.env.VITE_STORY_CHAIN_ID) || 1315,
     name: "Story Protocol Aeneid Testnet",
-    rpcUrl: "https://aeneid.storyrpc.io",
-    blockExplorer: "https://aeneid.storyscan.xyz",
+    rpcUrl: import.meta.env.VITE_STORY_RPC_URL || "https://aeneid.storyrpc.io",
+    blockExplorer: import.meta.env.VITE_STORY_EXPLORER || "https://aeneid.storyscan.xyz",
     nativeCurrency: {
       name: "IP Token",
       symbol: "IP",
