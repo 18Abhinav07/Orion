@@ -156,6 +156,28 @@ export const licenseTokenService = {
   },
 
   /**
+   * Fetch all the licenses to show in the marketaplce
+   */
+  async getAllLicenses(): Promise<any[]> {
+    try {
+      console.log('📡 Fetching all license tokens for marketplace...')  ;   
+      const response = await axios.get(`${API_BASE_URL}/marketplace/licensed`, {
+      });
+
+      if (response.data.success) {
+        const licenses = response.data.data.licenses || [];
+        console.log(`✅ Fetched ${licenses.length} licenses for marketplace`);
+        return licenses;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('❌ Error fetching all licenses for marketplace:', error);
+      return [];
+    }
+  },
+
+  /**
    * Get all license tokens owned by a user from backend
    */
   async getUserLicenses(walletAddress: string, provider?: any): Promise<any[]> {

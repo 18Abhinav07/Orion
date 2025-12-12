@@ -68,7 +68,7 @@ export const ProfessionalExpandedDetail: React.FC<{
             <div className="flex-grow overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
                 {/* Left Column - Image and Key Info */}
-                <div className="space-y-6">
+                <div className="space-y-6 ">
                   <div className="relative rounded-xl overflow-hidden shadow-lg">
                     <CachedImage
                       src={listing.image}
@@ -85,37 +85,31 @@ export const ProfessionalExpandedDetail: React.FC<{
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <DollarSign className="w-4 h-4 mr-2" /> Price per Token
-                      </div>
-                      <div className="font-bold text-lg text-gray-900">{formatPriceInUSD(listing.price, tokenPrice)}</div>
+                     {listing.metadataURI && (
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-3">Metadata</h3>
+                      <a 
+                        href={`https://gateway.pinata.cloud/ipfs/${listing.metadataURI.replace('ipfs://', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm truncate block"
+                      >
+                        View on IPFS
+                      </a>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <TrendingUp className="w-4 h-4 mr-2" /> Total Valuation
-                      </div>
-                      <div className="font-bold text-lg text-green-600">
-                        ${calculateTotalValuation(listing.price, listing.totalSupply)}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Users className="w-4 h-4 mr-2" /> Tokens Available
-                      </div>
-                      <div className="font-bold text-lg text-gray-900">{listing.amount}</div>
-                    </div>
+                  )}
+                   
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex items-center text-gray-500 mb-1">
                         <Clock className="w-4 h-4 mr-2" /> Token ID
                       </div>
-                      <div className="font-bold text-lg text-gray-900">#{listing.tokenId}</div>
+                      <div className="font-bold text-lg text-gray-900">#{listing.tokenId.toString().slice(0, 4)}..{listing.tokenId.toString().slice(-4)}</div>
                     </div>
                   </div>
                 </div>
   
                 {/* Right Column - Details and Description */}
-                <div className="space-y-6">
+                <div className="space-y-6 ">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
                       <Info className="w-5 h-5 mr-2 text-gray-500" />
@@ -161,19 +155,7 @@ export const ProfessionalExpandedDetail: React.FC<{
                     </p>
                   </div>
   
-                  {listing.metadataURI && (
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-3">Metadata</h3>
-                      <a 
-                        href={`https://gateway.pinata.cloud/ipfs/${listing.metadataURI.replace('ipfs://', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm truncate block"
-                      >
-                        View on IPFS
-                      </a>
-                    </div>
-                  )}
+                 
                 </div>
               </div>
             </div>
@@ -181,21 +163,8 @@ export const ProfessionalExpandedDetail: React.FC<{
             {/* Footer */}
             <footer className="p-6 bg-gray-50 border-t border-gray-200">
               <div className="flex justify-end space-x-4">
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={() => onNavigateToTrading(listing)}
-                >
-                  Go to Trading
-                </Button>
-                <Button 
-                  size="lg" 
-                  className="bg-gray-800 hover:bg-gray-900"
-                  onClick={() => onBuy(listing)}
-                >
-                  <DollarSign className="w-5 h-5 mr-2" />
-                  Buy Now
-                </Button>
+               
+                
                 {listing.license && (
                   <Button 
                     size="lg" 

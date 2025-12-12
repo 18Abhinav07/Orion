@@ -87,6 +87,7 @@ import PortfolioSettlements from '../../components/invoice-financing/investor/Po
 // Story Protocol IP Assets
 import { useUserAssets } from '../../hooks/useUserAssets';
 import { AssetCard } from '../../components/AssetCard';
+import HeroBackground from '../../components/HeroBackground';
 
 // Mock data for sections not yet converted to real data
 const MOCK_INCOME_HISTORY = [
@@ -182,13 +183,11 @@ const MOCK_TRANSACTIONS = [
 ];
 
 const SIDEBAR_ITEMS = [
-  { id: 'analytics', label: 'IP Analytics', icon: BarChart3 },
   { id: 'my-ips', label: 'My Registered IPs', icon: BookCopy },
   { id: 'my-licenses', label: 'My Owned Licenses', icon: Shield },
   { id: 'royalties', label: 'Royalty Dashboard', icon: DollarSign },
   { id: 'transactions', label: 'Transactions', icon: Activity },
   { id: 'profile', label: 'Profile', icon: User },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
 interface IPAsset {
@@ -268,8 +267,8 @@ const MOCK_IP_ASSETS: IPAsset[] = [
 const Dashboard: React.FC = () => {
 
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('analytics');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('my-ips');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -329,6 +328,11 @@ const Dashboard: React.FC = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [transactionLoading, setTransactionLoading] = useState(false);
   const [secondaryMarketOpen, setSecondaryMarketOpen] = useState(false);
+
+  // IP and WIP Token Balances
+  const [ipBalance, setIpBalance] = useState<string>('0');
+  const [wipBalance, setWipBalance] = useState<string>('0');
+  const [balancesLoading, setBalancesLoading] = useState(false);
 
   // Backend API - Fetch user's minted IP assets from database
   const { data: backendAssets, isLoading: backendAssetsLoading, error: backendAssetsError } = useUserAssets({
@@ -391,6 +395,19 @@ const Dashboard: React.FC = () => {
       fetchUserProfile();
     }
   }, [activeSection, isAuthenticated, profileData]);
+
+  // Fetch token balances when wallet connects
+  useEffect(() => {
+    if (isConnected && provider && address) {
+      fetchTokenBalances();
+      // Refresh token balances every 15 seconds
+      const interval = setInterval(() => {
+        fetchTokenBalances();
+      }, 15000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, provider, address]);
 
   // Connect wallet function
   const connectWallet = async () => {
@@ -479,6 +496,38 @@ const Dashboard: React.FC = () => {
       console.error('Failed to load registered IP assets:', error);
     } finally {
       setLoadingRegisteredAssets(false);
+    }
+  };
+
+  // Fetch IP and WIP token balances from wallet
+  const fetchTokenBalances = async () => {
+    if (!provider || !address) {
+      console.log('Provider or address not available');
+      return;
+    }
+
+    try {
+      setBalancesLoading(true);
+
+      // Get IP balance (native token - similar to ETH)
+      const ipBalanceWei = await provider.getBalance(address);
+      const ipBalanceFormatted = ethers.utils.formatEther(ipBalanceWei);
+      setIpBalance(parseFloat(ipBalanceFormatted).toFixed(4));
+
+      // WIP is a custom token, need to fetch from contract if it exists
+      // For now, set WIP to 0 (implement when WIP token contract is available)
+      setWipBalance('0');
+
+      console.log('✅ Token balances fetched:', {
+        ip: ipBalanceFormatted,
+        wip: '0'
+      });
+    } catch (error) {
+      console.error('❌ Error fetching token balances:', error);
+      setIpBalance('0');
+      setWipBalance('0');
+    } finally {
+      setBalancesLoading(false);
     }
   };
 
@@ -2417,7 +2466,7 @@ const Dashboard: React.FC = () => {
 
             {/* Key Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-              <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-4 md:p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0 pr-2">
@@ -2446,7 +2495,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-4 md:p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0 pr-2">
@@ -2465,7 +2514,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-4 md:p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0 pr-2">
@@ -2487,7 +2536,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-4 md:p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0 pr-2">
@@ -2507,7 +2556,7 @@ const Dashboard: React.FC = () => {
 
             {/* Charts Section - Improved Responsive Layout */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <Card className="xl:col-span-2 border border-gray-200 shadow-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
+              <Card className="xl:col-span-2 backdrop-blur-md bg-white/30 border border-white/20 shadow-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
                 <CardHeader className="pb-4 flex-shrink-0">
                   <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
@@ -2527,7 +2576,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border border-gray-200 shadow-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
                 <CardHeader className="pb-4 flex-shrink-0">
                   <CardTitle>
                     <span className="text-lg md:text-xl font-bold text-gray-900">Asset Allocation</span>
@@ -2602,7 +2651,7 @@ const Dashboard: React.FC = () => {
                   </Card>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {registeredIPAssets.map((asset: any, index: number) => (
-                    <Card key={asset.ipId || index} className="border border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                    <Card key={asset.ipId || index} className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -2670,7 +2719,7 @@ const Dashboard: React.FC = () => {
                 </>
               ) : (
                 // EMPTY STATE: No backend or localStorage assets
-                <Card className="border border-dashed border-gray-300">
+                <Card className="backdrop-blur-md bg-white/30 border border-dashed border-white/30">
                   <CardContent className="text-center py-12">
                     <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No IP Assets Registered Yet</h3>
@@ -2715,7 +2764,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {!isConnected ? (
-              <Card className="border border-gray-200 shadow-sm">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm">
                 <CardContent className="p-12 text-center">
                   <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Connect Your Wallet</h3>
@@ -2727,7 +2776,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
             ) : userAssets.length === 0 ? (
-              <Card className="border border-gray-200 shadow-sm">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm">
                 <CardContent className="p-12 text-center">
                   <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No Assets Found</h3>
@@ -3831,7 +3880,8 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex ${darkMode ? 'dark bg-gray-900' : ''}`} style={{backgroundColor: darkMode ? '' : "rgba(230, 240, 249, 0.9)"}}>
+      <HeroBackground />
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -3842,101 +3892,129 @@ const Dashboard: React.FC = () => {
 
       {/* Sidebar */}
       <motion.div
-        className={`fixed left-0 top-0 h-full shadow-lg z-50 transition-all duration-300 ${
-          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'
+        className={`fixed left-0 top-0 h-full shadow-lg z-50 transition-all duration-300 backdrop-blur-md ${
+          darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/40 border-white/20'
         } ${
           sidebarCollapsed ? 'w-16' : 'w-64'
         } ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
+        } lg:translate-x-0 border-r`}
         initial={false}
-        animate={{ 
+        animate={{
           width: sidebarCollapsed ? 64 : 256
         }}
+        transition={{ duration: 0.3 }}
       >
         {/* Logo */}
-        <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                darkMode ? 'bg-gray-100' : 'bg-gray-900'
-              }`}>
-                <Home className={`w-5 h-5 ${darkMode ? 'text-gray-900' : 'text-white'}`} />
-              </div>
-              {!sidebarCollapsed && (
-                <div>
-                  <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>AssetDash</p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Portfolio Manager</p>
-                </div>
-              )}
-            </div>
-            {/* Mobile Close Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+        <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
+          <div className="flex items-center space-x-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+          darkMode ? 'bg-gray-100' : 'bg-gray-900'
+        }`}>
+          <Home className={`w-5 h-5 ${darkMode ? 'text-gray-900' : 'text-white'}`} />
+        </div>
+        {!sidebarCollapsed && (
+          <div>
+            <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Orion</p>
           </div>
+        )}
+          </div>
+          {/* Mobile Close Button */}
+          <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setMobileMenuOpen(false)}
+        className="lg:hidden"
+          >
+        <X className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Navigation */}
-        <nav className="p-4">
+        <nav className="p-4 flex-1">
           <div className="space-y-2">
-            {SIDEBAR_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveSection(item.id);
-                  setMobileMenuOpen(false); // Close mobile menu when item is selected
-                }}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors relative ${
-                  activeSection === item.id
-                    ? `${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`
-                    : `${darkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {!sidebarCollapsed && (
-                  <span className="font-medium flex-1 text-left">{item.label}</span>
-                )}
-                {!sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
-                  <div className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </div>
-                )}
-                {sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
-                  <div className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </div>
-                )}
-              </button>
-            ))}
+        {SIDEBAR_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+          setActiveSection(item.id);
+          setMobileMenuOpen(false); // Close mobile menu when item is selected
+            }}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors relative group ${
+          activeSection === item.id
+            ? `${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`
+            : `${darkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`
+            }`}
+            title={sidebarCollapsed ? item.label : ''}
+          >
+            <item.icon className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && (
+          <span className="font-medium flex-1 text-left">{item.label}</span>
+            )}
+            {!sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
+          <div className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full flex-shrink-0">
+            {unreadNotifications > 99 ? '99+' : unreadNotifications}
+          </div>
+            )}
+            {sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
+          <div className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full">
+            {unreadNotifications > 9 ? '9+' : unreadNotifications}
+          </div>
+            )}
+            {/* Tooltip for collapsed view */}
+            {sidebarCollapsed && (
+          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            {item.label}
+          </div>
+            )}
+          </button>
+        ))}
           </div>
         </nav>
 
-        {/* Collapse Button - Desktop Only */}
-        <div className="absolute bottom-4 left-4 right-4 hidden lg:block">
+        {/* Collapse Button - Desktop Only (Improved) */}
+        <div className={`hidden lg:flex items-center justify-center p-4 border-t ${
+          darkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full justify-center hover:bg-gray-100"
+        variant="ghost"
+        size="sm"
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className={`w-full group relative ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <ChevronRight className={`w-4 h-4 transition-transform ${sidebarCollapsed ? '' : 'rotate-180'}`} />
+        <div className="flex items-center justify-center space-x-2 w-full">
+          <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+          {!sidebarCollapsed && (
+            <span className="text-sm font-medium">Collapse</span>
+          )}
+        </div>
           </Button>
         </div>
+
+        {/* Floating Collapse Button - Alternative for better UX (Optional) */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`hidden lg:flex absolute -right-4 top-24 p-1 h-8 w-8 rounded-full shadow-lg border ${
+        darkMode 
+          ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-white' 
+          : 'bg-white border-gray-200 hover:bg-gray-100 text-gray-900'
+          }`}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+        </Button>
       </motion.div>
 
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-      } ml-0`}>
+      } ml-0`} style={{position: 'relative', zIndex: 1}}>
         {/* Header */}
-        <header className={`border-b px-4 md:px-6 py-4 ${
-          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        <header className={`border-b px-4 md:px-6 py-4 backdrop-blur-md ${
+          darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/30 border-white/20'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -3961,7 +4039,7 @@ const Dashboard: React.FC = () => {
               {/* Register IP Button */}
               <Button
                 onClick={() => navigate('/issuer', { state: { from: '/dashboard' } })}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-black/80 hover:bg-black-700 text-white"
                 size="sm"
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -3969,15 +4047,7 @@ const Dashboard: React.FC = () => {
               </Button>
 
               {/* Register Derivative Asset Button (Non-functional for now) */}
-              <Button
-                onClick={() => toast.error('Derivative registration feature coming soon!')}
-                variant="outline"
-                size="sm"
-                className="hidden md:flex"
-              >
-                <Briefcase className="w-4 h-4 mr-2" />
-                Register Derivative
-              </Button>
+             
 
               {/* Wallet Connection */}
               {!isConnected ? (
@@ -3991,10 +4061,30 @@ const Dashboard: React.FC = () => {
                 </Button>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-700">Connected</span>
+                  {/* Token Balances */}
+                  <div className="hidden lg:flex items-center space-x-3 px-3 py-2 backdrop-blur-md bg-white/40 border border-white/30 rounded-lg shadow-sm">
+                    <div className="flex items-center space-x-2">
+                      <Coins className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">IP Balance</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {balancesLoading ? '...' : ipBalance}
+                        </p>
+                      </div>
+                    </div>
+                    <Separator orientation="vertical" className="h-8" />
+                    <div className="flex items-center space-x-2">
+                      <Shield className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">WIP Balance</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {balancesLoading ? '...' : wipBalance}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                 
                   <Button
                     variant="outline"
                     size="sm"
@@ -4002,33 +4092,19 @@ const Dashboard: React.FC = () => {
                     disabled={loading}
                     className="hidden md:flex"
                   >
-                    {loading ? 'Loading...' : 'Refresh'}
+                    {loading ? 'Loading...' : <RefreshCw className="w-4 h-4" />}
                   </Button>
                 </div>
               )}
               
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setDarkMode(!darkMode)}
-                className={`hidden md:flex ${
-                  darkMode ? 'hover:bg-gray-700 text-yellow-400' : 'hover:bg-gray-100 text-gray-600'
-                }`}
-              >
-                <Lightbulb className={`w-5 h-5 ${darkMode ? 'fill-current' : ''}`} />
-              </Button>
-              <Button variant="ghost" size="sm" className="hidden md:flex">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="hidden md:flex">
-                <Settings className="w-5 h-5" />
-              </Button>
+             
+              
               <Separator orientation="vertical" className="h-6 hidden md:block" />
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="text-red-600 hover:text-red-700"
-                onClick={() => navigate('/marketplace')}
+                onClick={() => navigate('/')}
               >
                 <LogOut className="w-5 h-5" />
               </Button>

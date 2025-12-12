@@ -78,7 +78,7 @@ const NewIssuerDashboard: React.FC = () => {
   const [authCheckLoading, setAuthCheckLoading] = useState(false);
   
   // Current view
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('create');
   
   // Token requests state
   const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
@@ -89,10 +89,11 @@ const NewIssuerDashboard: React.FC = () => {
     title: '',
     description: '',
     assetType: 'text',
-    imageFiles: [] as File[]
+    text: [] as File[],
+    representativeImage: [] as File[]
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mintingStatus, setMintingStatus] = useState<string>('Ready to Register');
+  const [mintingStatus, setMintingStatus] = useState<string>('create');
 
   // Mint token and result storage (for multi-step flow)
   const [mintToken, setMintToken] = useState<MintTokenResponse | null>(null);
@@ -203,12 +204,22 @@ const NewIssuerDashboard: React.FC = () => {
       // Step 3: Upload metadata to IPFS (TWO SEPARATE OBJECTS!)
       setMintingStatus('☁️ Uploading metadata to IPFS...');
       let imageUrl = '';
-      if (requestForm.imageFiles.length > 0) {
+      if (requestForm.text.length > 0) {
         try {
-          imageUrl = await uploadFileToIPFS(requestForm.imageFiles[0], requestForm.title);
-          console.log('✅ Image uploaded:', imageUrl);
+          imageUrl = await uploadFileToIPFS(requestForm.text[0], requestForm.title);
+          console.log('✅ Document uploaded:', imageUrl);
         } catch (uploadError) {
-          console.warn('⚠️ Image upload failed:', uploadError);
+          console.warn('⚠️ Document upload failed:', uploadError);
+        }
+      }
+
+      let representativeImageUrl = '';
+      if (requestForm.representativeImage.length > 0) {
+        try {
+          representativeImageUrl = await uploadFileToIPFS(requestForm.representativeImage[0], `${requestForm.title}-representative`);
+          console.log('✅ Representative image uploaded:', representativeImageUrl);
+        } catch (uploadError) {
+          console.warn('⚠️ Representative image upload failed:', uploadError);
         }
       }
 
@@ -226,7 +237,7 @@ const NewIssuerDashboard: React.FC = () => {
       const nftMetadata = {
         name: requestForm.title,
         description: `NFT for IP Asset - ${requestForm.assetType}`,
-        image: imageUrl,
+        image: representativeImageUrl || imageUrl, // Prioritize representative image for the NFT
         attributes: [
           { trait_type: 'Asset Type', value: requestForm.assetType },
           { trait_type: 'Creator', value: userAddress },
@@ -266,11 +277,16 @@ const NewIssuerDashboard: React.FC = () => {
       // Step 4: 🔥 DETECTION ENGINE - Check similarity BEFORE minting
       setMintingStatus('🔍 Checking for similar content (RAG Detection Engine)...');
       const tokenResult = await verificationService.generateMintToken({
+        title: requestForm.title,
+        assetDescription: requestForm.description,
         creatorAddress: userAddress,
         contentHash: calculatedContentHash,
         ipMetadataURI: calculatedIpMetadataURI,
         nftMetadataURI: calculatedNftMetadataURI,
-        assetType: requestForm.assetType.toLowerCase() as 'text' | 'image' | 'audio' | 'video', // REQUIRED!
+        assetType: requestForm.assetType.toLowerCase() as 'text' | 'image' | 'audio' | 'video',
+        // Add image if document was uploaded to IPFS
+        image: imageUrl || undefined,
+        representativeImageUrl: representativeImageUrl || undefined,
       });
 
       // Handle BLOCKED response (75%+ similarity)
@@ -552,7 +568,7 @@ const NewIssuerDashboard: React.FC = () => {
       }
 
       // Clear form
-      setRequestForm({ title: '', description: '', assetType: 'text', imageFiles: [] });
+      setRequestForm({ title: '', description: '', assetType: 'text', text: [], representativeImage: [] });
 
     } catch (err: any) {
       console.error('License attachment failed:', err);
@@ -663,7 +679,7 @@ const NewIssuerDashboard: React.FC = () => {
             Back
           </Button>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 z-100">Issuer Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 z-100">Creator Dashboard</h1>
           <p className="text-gray-600">Register new IP assets and manage legacy token requests.</p>
           <div className="mt-4">
             <Badge variant="outline" className="mr-2">
@@ -673,8 +689,7 @@ const NewIssuerDashboard: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="create">Register IP Asset</TabsTrigger>
             <TabsTrigger value="requests">Legacy Requests</TabsTrigger>
           </TabsList>
@@ -722,6 +737,10 @@ const NewIssuerDashboard: React.FC = () => {
                   <Input id="title" value={requestForm.title} onChange={(e) => setRequestForm(prev => ({ ...prev, title: e.target.value }))} placeholder="e.g., My Awesome Sci-Fi Novel" />
                 </div>
                 <div>
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea id="description" value={requestForm.description} onChange={(e) => setRequestForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Provide a brief description of your IP asset." rows={4} />
+                </div>
+                <div>
                   <Label htmlFor="assetType">Asset Type *</Label>
                   <Select value={requestForm.assetType} onValueChange={(value) => setRequestForm(prev => ({ ...prev, assetType: value }))}>
                   <SelectTrigger><SelectValue placeholder="Select asset type" /></SelectTrigger>
@@ -730,39 +749,81 @@ const NewIssuerDashboard: React.FC = () => {
                 </div>
                 </div>
                 <div className="space-y-4">
-                <div>
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea id="description" value={requestForm.description} onChange={(e) => setRequestForm(prev => ({ ...prev, description: e.target.value }))} placeholder="A brief summary of your intellectual property." rows={4} />
-                </div>
-                <div>
-                  <Label htmlFor="document">Upload Document (Optional)</Label>
-                  <Input 
-                  id="text" 
-                  type="file" 
-                  accept=".txt,.md,.pdf,.doc,.docx,.odt,.rtf" 
-                  onChange={(e) => { 
-                    const files = Array.from(e.target.files || []); 
-                    setRequestForm(prev => ({ ...prev, imageFiles: files })); 
-                  }} 
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Supported formats: TXT, MD, PDF, DOC, DOCX, ODT, RTF</p>
-                </div>
+                  <div>
+                    <Label htmlFor="text" className="flex items-center gap-2">
+                      Upload Document <span className="text-red-600">*</span>
+                      {requestForm.text.length > 0 && (
+                        <span className="text-green-600 text-sm">✓ File uploaded</span>
+                      )}
+                    </Label>
+                    <Input
+                    id="text"
+                    type="file"
+                    accept=".txt,.md,.pdf,.doc,.docx,.odt,.rtf"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setRequestForm(prev => ({ ...prev, text: files }));
+                    }}
+                    required
+                    className={requestForm.text.length === 0 ? "border-red-300" : "border-green-300"}
+                    />
+                    {requestForm.text.length > 0 && (
+                      <p className="text-xs text-green-600 mt-1 font-semibold">
+                        ✓ Selected: {requestForm.text[0].name}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      <span className="text-red-600 font-semibold">Required:</span> Supported formats: TXT, MD, PDF, DOC, DOCX, ODT, RTF
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="representativeImage" className="flex items-center gap-2">
+                      Representative Image (Optional)
+                      {requestForm.representativeImage.length > 0 && (
+                        <span className="text-green-600 text-sm">✓ Image selected</span>
+                      )}
+                    </Label>
+                    <Input
+                    id="representativeImage"
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setRequestForm(prev => ({ ...prev, representativeImage: files }));
+                    }}
+                    />
+                    {requestForm.representativeImage.length > 0 && (
+                      <p className="text-xs text-green-600 mt-1 font-semibold">
+                        ✓ Selected: {requestForm.representativeImage[0].name}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Optional: A cover image for your asset (JPG, PNG, GIF).
+                    </p>
+                  </div>
                 </div>
               </div>
 
                 <div className="flex flex-col items-center justify-center space-y-4">
-                   <Button
+                     <Button
                       onClick={handleRegisterIpAsset}
-                      disabled={isSubmitting || !requestForm.title || !requestForm.description}
+                      disabled={isSubmitting || !requestForm.title || !requestForm.description || requestForm.text.length === 0}
                       className="w-full max-w-xs"
                       size="lg"
                     >
                       {isSubmitting ? (
-                        <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>Submitting...</>
+                      <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>Submitting...</>
                       ) : (
-                        <><Rocket className="w-5 h-5 mr-2" />Register IP Asset</>
+                      <><Rocket className="w-5 h-5 mr-2" />Register IP Asset</>
                       )}
                     </Button>
+                    {!isSubmitting && (!requestForm.title || !requestForm.description || requestForm.text.length === 0) && (
+                      <p className="text-xs text-red-600 text-center">
+                        {!requestForm.title && "⚠️ Title is required"}
+                        {requestForm.title && !requestForm.description && "⚠️ Description is required"}
+                        {requestForm.title && requestForm.description && requestForm.text.length === 0 && "⚠️ Document upload is required"}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600 font-mono h-4">{isSubmitting && mintingStatus}</p>
                 </div>
               </CardContent>
@@ -913,7 +974,7 @@ const NewIssuerDashboard: React.FC = () => {
           isOpen={showBlockedModal}
           onClose={() => {
             setShowBlockedModal(false);
-            setRequestForm({ title: '', description: '', assetType: 'text', imageFiles: [] });
+            setRequestForm({ title: '', description: '', assetType: 'text', text: [], representativeImage: [] });
           }}
           blockedInfo={similarityData}
         />

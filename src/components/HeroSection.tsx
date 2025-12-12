@@ -9,7 +9,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   const handlenavigate = () => {
-    navigate('/dashboard');
+    navigate('/issuer');
   };
 
   useEffect(() => {
