@@ -2,13 +2,19 @@
 import { ethers } from 'ethers';
 import { verificationService } from './verificationService';
 
-// These are placeholders from the plan.
-// In a real app, these would come from a config file.
-const LICENSE_REGISTRY_ADDRESS = '0x0000000000000000000000000000000000000000'; // Placeholder
-const LAP_ROYALTY_POLICY = '0x0000000000000000000000000000000000000000'; // Placeholder
-const WIP_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // Placeholder
-const PIL_TEMPLATE_ADDRESS = '0x0000000000000000000000000000000000000000'; // Placeholder
-const LICENSE_ATTACHMENT_ADDRESS = '0x0000000000000000000000000000000000000000'; // Placeholder
+// Story Protocol Aeneid Testnet Contract Addresses
+// PILicenseTemplate is used for both registry and template
+const PIL_LICENSE_TEMPLATE = '0x58E2c909D557Cd23EF90D14f8fd21667A5Ae7a93'; // PILicenseTemplate
+const LICENSING_MODULE = '0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae'; // LicensingModule  
+const ROYALTY_POLICY_LAP = '0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6'; // RoyaltyPolicyLAP
+const CURRENCY_TOKEN = '0xB132A6B7AE652c974EE1557A3521D53d18F6739f'; // SUSD token
+
+// For backwards compatibility with plan variable names
+const LICENSE_REGISTRY_ADDRESS = PIL_LICENSE_TEMPLATE;
+const LAP_ROYALTY_POLICY = ROYALTY_POLICY_LAP;
+const WIP_TOKEN_ADDRESS = CURRENCY_TOKEN;
+const PIL_TEMPLATE_ADDRESS = PIL_LICENSE_TEMPLATE;
+const LICENSE_ATTACHMENT_ADDRESS = LICENSING_MODULE;
 
 // ABIs (minimal as per the plan)
 const LICENSE_REGISTRY_ABI = [
@@ -38,8 +44,8 @@ export async function getLicenseTermsId(
   // Register new terms
   console.log(`⚙️ Registering license terms: ${licenseType} ${royaltyPercent}%`);
   
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
   const registry = new ethers.Contract(
     LICENSE_REGISTRY_ADDRESS,
     LICENSE_REGISTRY_ABI,
@@ -55,7 +61,7 @@ export async function getLicenseTermsId(
     0, // expiration
     licenseType === 'commercial_remix', // commercialUse
     true, // commercialAttribution
-    ethers.ZeroAddress, // commercializerChecker
+    ethers.constants.AddressZero, // commercializerChecker
     royaltyPercent, // commercialRevShare
     0, // commercialRevCeiling
     true, // derivativesAllowed
@@ -94,8 +100,8 @@ export async function attachLicenseTermsToIp(
   licenseTermsId: string
 ): Promise<{ txHash: string }> {
   
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
   
   const contract = new ethers.Contract(
     LICENSE_ATTACHMENT_ADDRESS,

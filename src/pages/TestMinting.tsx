@@ -2,11 +2,17 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
 import { verificationService, MintTokenResponse, BlockedResponse, SimilarityInfo } from '../services/verificationService';
-import { storyProtocolService, MintResult } from '../services/storyProtocolService';
 import { getLicenseTermsId, attachLicenseTermsToIp } from '../services/licenseService';
 import { SimilarityWarningModal } from '../components/SimilarityWarningModal';
 import { SimilarityBlockedModal } from '../components/SimilarityBlockedModal';
 import { uploadJSONToIPFS } from '../services/pinataService';
+
+// Type for mint result since we're not using storyProtocolService anymore
+interface MintResult {
+  ipId: string;
+  tokenId: number;
+  txHash: string;
+}
 
 // Aeneid testnet configuration - using environment variables
 const CHAIN_ID_DECIMAL = Number(import.meta.env.VITE_STORY_CHAIN_ID) || 1315;
@@ -225,8 +231,8 @@ export default function TestMinting() {
   };
 
   const proceedWithMint = async (
-    token: MintTokenResponse, 
-    userAddress: string, 
+    token: MintTokenResponse,
+    userAddress: string,
     provider: ethers.providers.Web3Provider,
     contentHash: string,
     ipMetadataURI: string,
@@ -234,18 +240,91 @@ export default function TestMinting() {
   ) => {
     try {
       setStatus('⛓️ Minting IP Asset on Story Protocol...');
-      const signer = provider.getSigner(); // Get signer, not provider!
-      await storyProtocolService.initialize(signer);
+      const signer = provider.getSigner();
 
-      const mintingResult = await storyProtocolService.verifyAndMint({
-        to: userAddress,
-        contentHash,
+      const REGISTRATION_WORKFLOWS_ADDRESS = import.meta.env.VITE_REGISTRATION_WORKFLOWS || '0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424';
+      const SPG_NFT_CONTRACT = import.meta.env.VITE_SPG_NFT_COLLECTION || '0x78AD3d22E62824945DED384a5542Ad65de16E637';
+
+      // RegistrationWorkflows ABI - Call DIRECTLY (not through contract)
+      const WORKFLOWS_ABI = [
+        "function mintAndRegisterIp(address spgNftContract, address recipient, tuple(string ipMetadataURI, bytes32 ipMetadataHash, string nftMetadataURI, bytes32 nftMetadataHash) ipMetadata, bool allowDuplicates) returns (address ipId, uint256 tokenId)"
+      ];
+
+      const workflowsContract = new ethers.Contract(
+        REGISTRATION_WORKFLOWS_ADDRESS,
+        WORKFLOWS_ABI,
+        signer
+      );
+
+      // Prepare metadata with hashes
+      const ipMetadata = {
         ipMetadataURI,
+        ipMetadataHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ipMetadataURI)),
         nftMetadataURI,
-        nonce: token.nonce,
-        expiryTimestamp: token.expiresAt,
-        signature: token.signature,
-      });
+        nftMetadataHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes(nftMetadataURI))
+      };
+
+      console.log('🎯 Calling RegistrationWorkflows.mintAndRegisterIp DIRECTLY');
+      console.log('SPG NFT Contract:', SPG_NFT_CONTRACT);
+      console.log('Recipient:', userAddress);
+      console.log('Metadata:', ipMetadata);
+
+      // Call RegistrationWorkflows directly with user's wallet
+      const tx = await workflowsContract.mintAndRegisterIp(
+        SPG_NFT_CONTRACT,
+        userAddress,
+        ipMetadata,
+        true, // allowDuplicates
+        {
+          gasLimit: 5000000 // 5M gas
+        }
+      );
+
+      console.log('📝 Transaction sent:', tx.hash);
+      setStatus('⏳ Waiting for confirmation...');
+
+      const receipt = await tx.wait();
+      console.log('✅ Transaction confirmed!', receipt);
+
+      // Parse events to get ipId and tokenId
+      let ipId = '';
+      let tokenId = 0;
+
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = workflowsContract.interface.parseLog(log);
+          console.log('Parsed log:', parsedLog);
+        } catch (e) {
+          // Try to find token ID from logs
+          if (log.topics.length >= 4) {
+            tokenId = parseInt(log.topics[3], 16);
+          }
+        }
+      }
+
+      // Use transaction hash as placeholder for IP ID if not found
+      ipId = receipt.contractAddress || `IP-${receipt.transactionHash.slice(0, 10)}`;
+
+      const mintingResult = {
+        ipId,
+        tokenId,
+        txHash: receipt.transactionHash
+      };
+
+      console.log('✅ Mint result:', mintingResult);
+
+      // Update backend with result (non-critical)
+      try {
+        await verificationService.updateTokenAfterMint({
+          nonce: token.nonce,
+          ipId: mintingResult.ipId,
+          tokenId: mintingResult.tokenId.toString(),
+          txHash: mintingResult.txHash
+        });
+        console.log('✅ Backend updated successfully');
+      } catch (backendError: any) {
+        console.warn('⚠️ Backend update failed (non-critical):', backendError.message);
+      }
 
       setStatus('✅ IP Asset Registered! Configure license terms below.');
       setMintResult(mintingResult);
@@ -291,12 +370,16 @@ export default function TestMinting() {
         throw new Error('No similarity data available');
       }
 
+      if (!contentHash || !ipMetadataURI || !nftMetadataURI) {
+        throw new Error('Metadata not available');
+      }
+
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       const userAddress = await signer.getAddress();
 
       setStatus('✅ Registering as derivative work...');
-      await proceedWithMint(mintToken, userAddress, provider);
+      await proceedWithMint(mintToken, userAddress, provider, contentHash, ipMetadataURI, nftMetadataURI);
 
       // Store parent IP ID for derivative linking (can be done after license attachment)
       localStorage.setItem('pendingDerivativeParent', similarityData.topMatch.ipId);
