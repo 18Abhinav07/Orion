@@ -1,6 +1,8 @@
 // Test component for Story Protocol minting - with License Attachment & Similarity Detection
 import { useState } from 'react';
 import { ethers } from 'ethers';
+import { StoryClient, StoryConfig } from '@story-protocol/core-sdk';
+import { http, createWalletClient, custom, type Address, defineChain } from 'viem';
 import { verificationService, MintTokenResponse, BlockedResponse, SimilarityInfo } from '../services/verificationService';
 import { getLicenseTermsId, attachLicenseTermsToIp } from '../services/licenseService';
 import { SimilarityWarningModal } from '../components/SimilarityWarningModal';
@@ -31,6 +33,32 @@ const AENEID_CONFIG = {
   rpcUrls: [import.meta.env.VITE_STORY_RPC_URL || 'https://aeneid.storyrpc.io'],
   blockExplorerUrls: [import.meta.env.VITE_STORY_EXPLORER || 'https://aeneid.storyscan.xyz'],
 };
+
+// Define Aeneid chain for viem (Story Protocol SDK)
+const aeneidChain = defineChain({
+  id: CHAIN_ID_DECIMAL,
+  name: 'Story Aeneid Testnet',
+  network: 'aeneid',
+  nativeCurrency: {
+    name: 'IP',
+    symbol: 'IP',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [import.meta.env.VITE_STORY_RPC_URL || 'https://aeneid.storyrpc.io'],
+    },
+    public: {
+      http: [import.meta.env.VITE_STORY_RPC_URL || 'https://aeneid.storyrpc.io'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'StoryScan',
+      url: import.meta.env.VITE_STORY_EXPLORER || 'https://aeneid.storyscan.xyz',
+    },
+  },
+});
 
 export default function TestMinting() {
   const [status, setStatus] = useState<string>('Ready to test');
@@ -272,7 +300,23 @@ export default function TestMinting() {
       console.log('Recipient:', userAddress);
       console.log('Metadata:', ipMetadata);
 
-      // Call RegistrationWorkflows directly with user's wallet
+      // STEP 1: Use callStatic to predict return values (ipId, tokenId)
+      // This simulates the transaction without sending it
+      setStatus('🔮 Simulating transaction to get return values...');
+      const { ipId: predictedIpId, tokenId: predictedTokenId } = await workflowsContract.callStatic.mintAndRegisterIp(
+        SPG_NFT_CONTRACT,
+        userAddress,
+        ipMetadata,
+        true // allowDuplicates
+      );
+
+      console.log('✅ Predicted return values:', {
+        ipId: predictedIpId,
+        tokenId: predictedTokenId.toString()
+      });
+
+      // STEP 2: Send the actual transaction
+      setStatus('⛓️ Sending transaction to blockchain...');
       const tx = await workflowsContract.mintAndRegisterIp(
         SPG_NFT_CONTRACT,
         userAddress,
@@ -289,51 +333,9 @@ export default function TestMinting() {
       const receipt = await tx.wait();
       console.log('✅ Transaction confirmed!', receipt);
 
-      // Parse events to get ipId and tokenId from IPRegistered event
-      // Story Protocol emits: IPRegistered(address ipId, uint256 chainId, address tokenContract, uint256 tokenId)
-      let ipId = '';
-      let tokenId = 0;
-
-      // Create a minimal interface just for parsing the IPRegistered event
-      const ipRegistryInterface = new ethers.utils.Interface([
-        'event IPRegistered(address ipId, uint256 chainId, address tokenContract, uint256 tokenId, string name, string uri, uint256 registrationDate)'
-      ]);
-
-      for (const log of receipt.logs) {
-        try {
-          // Try to parse with IP Registry interface
-          const parsedLog = ipRegistryInterface.parseLog(log);
-          if (parsedLog && parsedLog.name === 'IPRegistered') {
-            ipId = parsedLog.args.ipId;
-            tokenId = parsedLog.args.tokenId.toNumber();
-            console.log('✅ Found IPRegistered event:', { ipId, tokenId });
-            break;
-          }
-        } catch (e) {
-          // Not this event, continue
-        }
-      }
-
-      // Fallback: If still not found, check for any address-like values in logs
-      if (!ipId) {
-        console.warn('⚠️ Could not find IPRegistered event, attempting manual extraction');
-        for (const log of receipt.logs) {
-          // IPRegistered event signature topic
-          if (log.topics[0] === '0x1f2e07d22e5e0c5b7d7f3b0e91c8e1e22a6f5b7c3d4e5f6a7b8c9d0e1f2a3b4c') {
-            try {
-              ipId = ethers.utils.getAddress('0x' + log.topics[1].slice(26));
-              tokenId = parseInt(log.topics[3], 16);
-              break;
-            } catch (e) {
-              console.error('Failed to parse log manually:', e);
-            }
-          }
-        }
-      }
-
-      if (!ipId) {
-        throw new Error('Failed to get IP ID from transaction receipt. Transaction may have failed.');
-      }
+      // Use the predicted values (they're deterministic)
+      const ipId = predictedIpId;
+      const tokenId = predictedTokenId.toNumber();
 
       const mintingResult = {
         ipId,
@@ -343,17 +345,22 @@ export default function TestMinting() {
 
       console.log('✅ Mint result:', mintingResult);
 
-      // Update backend with result (non-critical)
+      // Update backend with result - THIS IS CRITICAL for asset tracking
       try {
+        setStatus('💾 Updating backend with IP ID...');
         await verificationService.updateTokenAfterMint({
           nonce: token.nonce,
           ipId: mintingResult.ipId,
-          tokenId: mintingResult.tokenId.toString(),
+          tokenId: mintingResult.tokenId,
           txHash: mintingResult.txHash
         });
-        console.log('✅ Backend updated successfully');
+        console.log('✅ Backend updated successfully with IP ID and token ID');
+        setStatus('✅ Backend updated! IP Asset registered successfully.');
       } catch (backendError: any) {
-        console.warn('⚠️ Backend update failed (non-critical):', backendError.message);
+        console.error('❌ Backend update failed:', backendError);
+        setStatus('⚠️ IP minted but backend update failed. Asset may show as pending.');
+        // Don't throw - allow user to continue with license attachment
+        // They can use the "Find Missing IP IDs" tool later
       }
 
       setStatus('✅ IP Asset Registered! Configure license terms below.');
@@ -442,7 +449,9 @@ export default function TestMinting() {
       setStatus('Attaching license to IP asset on-chain...');
       const attachTx = await attachLicenseTermsToIp(mintResult.ipId, licenseTermsId);
       
-      setStatus('Finalizing registration with backend...');
+      console.log('✅ License attached on-chain! TX:', attachTx.txHash);
+      
+      setStatus('💾 Finalizing registration with backend...');
       await verificationService.finalizeMint({
         nonce: mintToken.nonce,
         ipId: mintResult.ipId,
@@ -454,7 +463,8 @@ export default function TestMinting() {
         licenseTxHash: attachTx.txHash
       });
       
-      setStatus('🎉 SUCCESS! IP is fully registered with license terms.');
+      console.log('✅ Backend finalized successfully with license info');
+      setStatus('🎉 SUCCESS! IP fully registered with license terms in backend.');
       setResult({ ...mintResult, licenseTermsId, licenseTxHash: attachTx.txHash });
       setShowLicenseConfig(false);
       
