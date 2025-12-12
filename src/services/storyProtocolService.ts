@@ -67,8 +67,8 @@ interface ClaimRevenueResult {
 
 export class StoryProtocolService {
   private client: StoryClient | null = null;
-  private walletClient: any = null;
-  private publicClient: any = null;
+  private walletClient: unknown = null;
+  private publicClient: unknown = null;
   private userAddress: Address | null = null;
   private isInitialized: boolean = false;
 
@@ -80,7 +80,7 @@ export class StoryProtocolService {
    * Initialize Story Protocol client with user's MetaMask wallet
    * Called from frontend when user connects wallet
    */
-  async initialize(address: Address, ethersSigner: any): Promise<void> {
+  async initialize(address: Address, ethersSigner: unknown): Promise<void> {
     try {
       if (!window.ethereum) {
         throw new Error('MetaMask not found');
@@ -443,7 +443,7 @@ export class StoryProtocolService {
    * @param ipId - IP Asset ID
    * @returns IP Asset details
    */
-  async getIpAsset(ipId: Address): Promise<any> {
+  async getIpAsset(ipId: Address): Promise<unknown> {
     if (!this.isReady()) {
       throw new Error('Story Protocol SDK not initialized');
     }
@@ -464,7 +464,7 @@ export class StoryProtocolService {
    * @param licenseTermsId - License terms ID
    * @returns License terms details
    */
-  async getLicenseTerms(licenseTermsId: string): Promise<any> {
+  async getLicenseTerms(licenseTermsId: string): Promise<unknown> {
     if (!this.isReady()) {
       throw new Error('Story Protocol SDK not initialized');
     }

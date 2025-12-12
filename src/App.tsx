@@ -26,6 +26,10 @@ import OrderBookPage from "./pages/orderbook/OrderBookPage";
 import TradingPage from "./pages/trading/TradingPage";
 import TestMinting from "./pages/TestMinting";
 import LicenseAttachment from "./pages/LicenseAttachment";
+import RoyaltyDashboard from "./pages/dashboard/RoyaltyDashboard";
+import PayRoyalties from "./pages/dashboard/PayRoyalties";
+import DirectRoyaltyPayment from "./pages/dashboard/DirectRoyaltyPayment";
+import CheckWIPBalance from "./pages/dashboard/CheckWIPBalance";
 import "./styles/HeroBackground.css";
 
 const App = () => {
@@ -75,6 +79,30 @@ const App = () => {
                 path="/dashboard" 
                 element={
                     <Dashboard />
+                } 
+              />
+               <Route 
+                path="/royalty-dashboard" 
+                element={
+                    <RoyaltyDashboard />
+                } 
+              />
+              <Route 
+                path="/pay-royalties" 
+                element={
+                    <PayRoyalties />
+                } 
+              />
+              <Route 
+                path="/direct-royalty-payment" 
+                element={
+                    <DirectRoyaltyPayment />
+                } 
+              />
+              <Route 
+                path="/check-wip-balance" 
+                element={
+                    <CheckWIPBalance />
                 } 
               />
               <Route 

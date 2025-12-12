@@ -26,14 +26,14 @@ const TOKEN_ABI = [
 ];
 import { toast } from 'sonner';
 import YieldIncomeReport from '../../components/income/YieldIncomeReport';
-import { 
-  BarChart3, 
-  Wallet, 
-  User, 
-  DollarSign, 
-  TrendingUp, 
-  Bell, 
-  Settings, 
+import {
+  BarChart3,
+  Wallet,
+  User,
+  DollarSign,
+  TrendingUp,
+  Bell,
+  Settings,
   LogOut,
   Home,
   ChevronRight,
@@ -78,6 +78,7 @@ import { Label } from '../../components/ui/label';
 import SecondaryMarketplace from '../../components/SecondaryMarketplace';
 import ComplianceGuard from '../../components/ComplianceGuard';
 import ComplianceCheck from '../../components/ComplianceCheck';
+import RoyaltyDashboard from './RoyaltyDashboard';
 import { fetchTokenPrice, formatPriceInUSD } from '../../utils/priceService';
 
 // Invoice Financing Components
@@ -100,83 +101,83 @@ const MOCK_INCOME_HISTORY = [
 ];
 
 const MOCK_TRANSACTIONS = [
-  { 
-    date: "2024-03-15", 
+  {
+    date: "2024-03-15",
     time: "09:30 AM",
-    asset: "Manhattan Luxury Apartment", 
+    asset: "Manhattan Luxury Apartment",
     location: "New York, NY",
-    amount: 125000, 
-    type: "buy", 
+    amount: 125000,
+    type: "buy",
     shares: 250,
     status: "completed"
   },
-  { 
-    date: "2024-03-10", 
+  {
+    date: "2024-03-10",
     time: "11:45 AM",
-    asset: "Tech Startup Invoice #1847", 
+    asset: "Tech Startup Invoice #1847",
     location: "San Francisco, CA",
-    amount: 8500, 
-    type: "buy", 
+    amount: 8500,
+    type: "buy",
     shares: 85,
     status: "completed"
   },
-  { 
-    date: "2024-03-05", 
+  {
+    date: "2024-03-05",
     time: "02:15 PM",
-    asset: "Gold Bullion Reserve", 
+    asset: "Gold Bullion Reserve",
     location: "London, UK",
-    amount: 45000, 
-    type: "buy", 
+    amount: 45000,
+    type: "buy",
     shares: 90,
     status: "completed"
   },
-  { 
-    date: "2024-02-28", 
+  {
+    date: "2024-02-28",
     time: "10:20 AM",
-    asset: "Carbon Credit Portfolio", 
+    asset: "Carbon Credit Portfolio",
     location: "Toronto, CA",
-    amount: 15000, 
-    type: "buy", 
+    amount: 15000,
+    type: "buy",
     shares: 150,
     status: "completed"
   },
-  { 
-    date: "2024-02-20", 
+  {
+    date: "2024-02-20",
     time: "03:45 PM",
-    asset: "Previous Investment", 
+    asset: "Previous Investment",
     location: "Chicago, IL",
-    amount: 25000, 
-    type: "sell", 
+    amount: 25000,
+    type: "sell",
     shares: 50,
     status: "completed"
   },
-  { 
-    date: "2024-02-15", 
+  {
+    date: "2024-02-15",
     time: "12:00 PM",
-    asset: "Manhattan Luxury Apartment", 
+    asset: "Manhattan Luxury Apartment",
     location: "New York, NY",
-    amount: 1850, 
-    type: "dividend", 
+    amount: 1850,
+    type: "dividend",
     shares: 0,
     status: "completed"
   },
-  { 
-    date: "2024-01-25", 
+  {
+    date: "2024-01-25",
     time: "01:30 PM",
-    asset: "Real Estate Fund REIT", 
+    asset: "Real Estate Fund REIT",
     location: "Miami, FL",
-    amount: 35000, 
-    type: "buy", 
+    amount: 35000,
+    type: "buy",
     shares: 175,
     status: "completed"
   },
-  { 
-    date: "2024-01-18", 
+  {
+    date: "2024-01-18",
     time: "04:20 PM",
-    asset: "Green Energy Bonds", 
+    asset: "Green Energy Bonds",
     location: "Austin, TX",
-    amount: 22000, 
-    type: "buy", 
+    amount: 22000,
+    type: "buy",
     shares: 110,
     status: "pending"
   },
@@ -311,7 +312,7 @@ const Dashboard: React.FC = () => {
     totalAssets: 0,
     activeInvestments: 0
   });
-  const [loadingStates, setLoadingStates] = useState<{ [key: string]: LoadingState }>({
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: LoadingState }> ({
     assets: { isLoading: false, isFromCache: false },
     portfolio: { isLoading: false, isFromCache: false },
     transactions: { isLoading: false, isFromCache: false },
@@ -552,10 +553,10 @@ const Dashboard: React.FC = () => {
           console.log(`✅ Loaded ${cachedAssets.length} assets from cache instantly!`);
           setUserAssets(cachedAssets);
           setPortfolioData(cachedPortfolio);
-          updateLoadingState('assets', { 
-            isLoading: false, 
-            isFromCache: true, 
-            lastUpdated: Date.now() 
+          updateLoadingState('assets', {
+            isLoading: false,
+            isFromCache: true,
+            lastUpdated: Date.now()
           });
           
           // Only show toast if there are assets to display
@@ -587,22 +588,22 @@ const Dashboard: React.FC = () => {
       console.log('📞 Step 1: Calling getMyAssets from marketplace...');
       const myAssetsResult = await marketplaceContract.getMyAssets();
       const [myTokenIds, myAmounts] = myAssetsResult;
-      console.log('✅ Marketplace assets:', { 
-        tokenIds: myTokenIds.map((id: ethers.BigNumber) => id.toString()), 
-        amounts: myAmounts.map((amt: ethers.BigNumber) => amt.toString()) 
+      console.log('✅ Marketplace assets:', {
+        tokenIds: myTokenIds.map((id: ethers.BigNumber) => id.toString()),
+        amounts: myAmounts.map((amt: ethers.BigNumber) => amt.toString())
       });
 
       // STEP 2: Get all listings to get prices for both marketplace and wallet tokens
       console.log('📞 Step 2: Calling getAllListings...');
       const allListingsResult = await marketplaceContract.getAllListings();
       const [allTokenIds, allIssuers, allAmounts, allPrices] = allListingsResult;
-      console.log('✅ All listings:', { 
+      console.log('✅ All listings:', {
         tokenIds: allTokenIds.map((id: ethers.BigNumber) => id.toString()),
         prices: allPrices.map((price: ethers.BigNumber) => price.toString())
       });
 
       // STEP 3: FALLBACK - Check user's wallet directly for withdrawn tokens
-      console.log('� Step 3: Checking wallet directly for withdrawn tokens...');
+      console.log(' Step 3: Checking wallet directly for withdrawn tokens...');
       const TOKEN_ABI = [
         "function uri(uint256 tokenId) external view returns (string memory)",
         "function tokenMetadata(uint256 tokenId) external view returns (string memory)",
@@ -645,9 +646,9 @@ const Dashboard: React.FC = () => {
               const balanceNumber = balance.toNumber();
               if (balanceNumber > 0) {
                 const key = `${tokenContract.address}-${tokenId}`;
-                walletTokenBalances.set(key, { 
-                  amount: balanceNumber, 
-                  contract: tokenContract.address 
+                walletTokenBalances.set(key, {
+                  amount: balanceNumber,
+                  contract: tokenContract.address
                 });
                 console.log(`💰 Found wallet balance for token ${tokenId} on ${tokenContract.name}: ${balanceNumber}`);
               }
@@ -678,8 +679,8 @@ const Dashboard: React.FC = () => {
         const { amount, contract } = tokenInfo;
         
         if (!allOwnedTokens.has(tokenId)) {
-          allOwnedTokens.set(tokenId, { 
-            amount, 
+          allOwnedTokens.set(tokenId, {
+            amount,
             source: 'wallet',
             contract: contract
           });
@@ -923,10 +924,10 @@ const Dashboard: React.FC = () => {
       dashboardCache.recordLastRefresh(address);
       
       // Update loading state
-      updateLoadingState('assets', { 
-        isLoading: false, 
-        isFromCache: false, 
-        lastUpdated: Date.now() 
+      updateLoadingState('assets', {
+        isLoading: false,
+        isFromCache: false,
+        lastUpdated: Date.now()
       });
       
       if (userAssetsArray.length === 0) {
@@ -1080,10 +1081,10 @@ const Dashboard: React.FC = () => {
           console.log(`✅ Loaded ${cachedNotifications.length} notifications from cache instantly!`);
           setNotifications(cachedNotifications);
           setUnreadNotifications(cachedNotifications.filter(n => !n.read).length);
-          updateLoadingState('notifications', { 
-            isLoading: false, 
-            isFromCache: true, 
-            lastUpdated: Date.now() 
+          updateLoadingState('notifications', {
+            isLoading: false,
+            isFromCache: true,
+            lastUpdated: Date.now()
           });
           
           // Don't show toast for notifications loading - keep it silent for better UX
@@ -1137,7 +1138,7 @@ const Dashboard: React.FC = () => {
           timestamp: block.timestamp * 1000,
           type: 'order_created',
           title: 'Buy Order Created',
-          message: `Your buy order for ${args!.amount.toString()} tokens of ${assetName} at ${ethers.utils.formatEther(args!.pricePerToken)} U2U each is now active in the OrderBook.`,
+          message: `Your buy order for ${args!.amount.toString()} tokens of ${assetName} at ${ethers.utils.formatEther(args!.pricePerToken)} U2U each is now active in the OrderBook.`, 
           status: 'pending',
           priority: 'medium',
           read: false,
@@ -1179,7 +1180,7 @@ const Dashboard: React.FC = () => {
           timestamp: block.timestamp * 1000,
           type: 'order_created',
           title: 'Sell Order Created & Funds Escrowed',
-          message: `Your sell order for ${args!.amount.toString()} tokens of ${assetName} at ${ethers.utils.formatEther(args!.pricePerToken)} Flow each is active. ${escrowAmount} Flow has been escrowed.`,
+          message: `Your sell order for ${args!.amount.toString()} tokens of ${assetName} at ${ethers.utils.formatEther(args!.pricePerToken)} Flow each is active. ${escrowAmount} Flow has been escrowed.`, 
           status: 'pending',
           priority: 'high',
           read: false,
@@ -1209,7 +1210,7 @@ const Dashboard: React.FC = () => {
           timestamp: block.timestamp * 1000,
           type: 'order_filled',
           title: 'Order Executed Successfully',
-          message: `Your order #${args!.orderId.toString()} has been filled! ${args!.amount.toString()} tokens traded for ${ethers.utils.formatEther(args!.totalPrice)} Flow. Escrow released.`,
+          message: `Your order #${args!.orderId.toString()} has been filled! ${args!.amount.toString()} tokens traded for ${ethers.utils.formatEther(args!.totalPrice)} Flow. Escrow released.`, 
           status: 'completed',
           priority: 'high',
           read: false,
@@ -1252,7 +1253,7 @@ const Dashboard: React.FC = () => {
           timestamp: block.timestamp * 1000,
           type: 'trade_completed',
           title: 'Asset Purchase Completed',
-          message: `Successfully purchased ${args!.amount.toString()} tokens of ${assetName} from the primary marketplace.`,
+          message: `Successfully purchased ${args!.amount.toString()} tokens of ${assetName} from the primary marketplace.`, 
           status: 'completed',
           priority: 'medium',
           read: false,
@@ -1283,10 +1284,10 @@ const Dashboard: React.FC = () => {
       dashboardCache.cacheNotifications(recentNotifications, address);
       
       // Update loading state
-      updateLoadingState('notifications', { 
-        isLoading: false, 
-        isFromCache: false, 
-        lastUpdated: Date.now() 
+      updateLoadingState('notifications', {
+        isLoading: false,
+        isFromCache: false,
+        lastUpdated: Date.now()
       });
 
       return recentNotifications;
@@ -1345,10 +1346,10 @@ const Dashboard: React.FC = () => {
         if (cachedTransactions) {
           console.log(`✅ Loaded ${cachedTransactions.length} transactions from cache instantly!`);
           setTransactionHistory(cachedTransactions);
-          updateLoadingState('transactions', { 
-            isLoading: false, 
-            isFromCache: true, 
-            lastUpdated: Date.now() 
+          updateLoadingState('transactions', {
+            isLoading: false,
+            isFromCache: true,
+            lastUpdated: Date.now()
           });
           
           // Only show toast if there are transactions to display
@@ -1715,7 +1716,7 @@ const Dashboard: React.FC = () => {
         console.log('  5. Transactions might be older than 50,000 blocks');
         
         // Show user-friendly message
-        toast.info('No recent transactions found. This could mean you haven\'t made any trades yet, or your transactions are older than the search range.');
+        toast.info("No recent transactions found. This could mean you haven't made any trades yet, or your transactions are older than the search range.");
       } else {
         console.log('✅ Sample transactions:', transactions.slice(0, 2));
         const isBackgroundRefresh = loadingStates.transactions.isFromCache && loadingStates.transactions.lastUpdated;
@@ -1734,10 +1735,10 @@ const Dashboard: React.FC = () => {
       dashboardCache.cacheTransactionHistory(transactions, address);
       
       // Update loading state
-      updateLoadingState('transactions', { 
-        isLoading: false, 
-        isFromCache: false, 
-        lastUpdated: Date.now() 
+      updateLoadingState('transactions', {
+        isLoading: false,
+        isFromCache: false,
+        lastUpdated: Date.now()
       });
 
     } catch (error: any) {
@@ -1952,8 +1953,8 @@ const Dashboard: React.FC = () => {
     }
 
     // Navigate to the OrderBook page with the selected token
-    navigate('/orderbook', { 
-      state: { 
+    navigate('/orderbook', {
+      state: {
         selectedToken: {
           tokenId: asset.tokenId,
           name: asset.name,
@@ -1964,7 +1965,7 @@ const Dashboard: React.FC = () => {
           marketplacePrice: marketplacePrice, // Add converted U2U price
           description: asset.description
         }
-      } 
+      }
     });
   };
 
@@ -2011,7 +2012,7 @@ const Dashboard: React.FC = () => {
       await tokenService.withdrawAsset(asset.tokenId, asset.amount);
       
       toast.success(
-        `Successfully withdrew ${asset.amount} tokens of ${asset.name} to your wallet! You can now use them in the OrderBook.`,
+        `Successfully withdrew ${asset.amount} tokens of ${asset.name} to your wallet! You can now use them in the OrderBook.`, 
         { duration: 5000 }
       );
       
@@ -2051,7 +2052,7 @@ const Dashboard: React.FC = () => {
   }, [isConnected, address]);
 
   // Robust Image Component with fallbacks (same as marketplace)
-  const RobustImage: React.FC<{
+  const RobustImage: React.FC <{
     src: string;
     alt: string;
     className?: string;
@@ -4464,4 +4465,3 @@ function setLoadingStates(arg0: (prev: any) => any) {
 function setUserAssets(arg0: undefined[]) {
   throw new Error('Function not implemented.');
 }
-
