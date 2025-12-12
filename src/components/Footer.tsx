@@ -10,11 +10,11 @@ const Footer: React.FC = () => {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-marketplace-blue text-white font-bold text-xl px-2 py-1 rounded">RWA</div>
-              <span className="font-semibold text-xl text-white">Marketplace</span>
+              <div className="bg-purple-500 text-white font-bold text-xl px-2 py-1 rounded">IP-OPS</div>
+              <span className="font-semibold text-xl text-white"></span>
             </div>
             <p className="text-sm mb-4">
-              A next-generation platform for tokenized real-world assets, providing investors with access to premium investment opportunities.
+              The next-generation platform for on-chain intellectual property, empowering creators with transparent registration, automated royalties, and derivative tracking.
             </p>
             <div className="flex space-x-4">
   <a
@@ -51,27 +51,20 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="font-semibold text-white mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="/about" className="hover:text-white transition-colors">About Us</a></li>
-              <li><a href="/marketplace" className="hover:text-white transition-colors">Marketplace</a></li>
-<li>
-  <a 
-    href="mailto:theopenassets@gmail.com" 
-    className="hover:text-white transition-colors"
-  >
-    Contact Us
-  </a>
-</li>
+              <li><a href="/about" className="hover:text-white transition-colors">About IP-OPS</a></li>
+              <li><a href="/marketplace" className="hover:text-white transition-colors">IP Marketplace</a></li>
+              <li><a href="/support" className="hover:text-white transition-colors">Support</a></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="font-semibold text-white mb-4">Asset Categories</h3>
+            <h3 className="font-semibold text-white mb-4">IP Categories</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="hover:text-white transition-colors">Real Estate</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Commodities</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Invoices</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Art & Collectibles</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Infrastructure</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Digital Art</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Music</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Written Works</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Videos</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">Software</a></li>
             </ul>
           </div>
           
@@ -80,16 +73,16 @@ const Footer: React.FC = () => {
         
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between">
           <div className="flex flex-col space-y-2">
-            <p className="text-sm">© 2025 OPENASSETS. All rights reserved.</p>
+            <p className="text-sm">© 2025 IP-OPS. All rights reserved.</p>
             <p className="text-sm text-gray-400">
                Powered by{' '}
               <a 
-                href="https://Flow.xyz" 
+                href="https://www.storyprotocol.xyz/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-marketplace-blue text-white font-bold text-sm px-2 py-1 rounded"
+                className="bg-purple-500 text-white font-bold text-sm px-2 py-1 rounded"
               >
-                Flow Network
+                Story Protocol
               </a>
             </p>
           </div>

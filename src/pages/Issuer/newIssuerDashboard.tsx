@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'react-hot-toast';
-import { FileText, Plus, Clock, CheckCircle, XCircle, Rocket, Package } from 'lucide-react';
+import { FileText, Plus, Clock, CheckCircle, XCircle, Rocket, Package, ArrowLeft } from 'lucide-react';
 import { useWallet } from '../../context/WalletContext';
 import TokenManagementService from '../../services/tokenManagementService';
 import DirectMarketplaceListingService from '../../services/directMarketplaceListingService';
@@ -25,6 +26,7 @@ import { SimilarityBlockedModal } from '../../components/SimilarityBlockedModal'
 // Invoice Financing Components
 import TokenStatusCard from '../../components/invoice-financing/investor/TokenStatusCard';
 import PortfolioSettlements from '../../components/invoice-financing/investor/PortfolioSettlements';
+import HeroBackground from '../../components/HeroBackground';
 
 // Aeneid testnet configuration from TestMinting.tsx
 const AENEID_CHAIN_ID = '0x523'; // 1315 in hex
@@ -60,6 +62,8 @@ interface TokenRequest {
 }
 
 const NewIssuerDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { address, isConnected, connectWallet, provider, signer } = useWallet();
   
     // Service states
@@ -509,8 +513,34 @@ const NewIssuerDashboard: React.FC = () => {
       setShowLicenseConfig(false);
       toast.success('🎉 License attached successfully! IP Asset is fully registered.');
 
+      // Save to localStorage for user dashboard
+      try {
+        const registeredAsset = {
+          ipId: mintResult.ipId,
+          tokenId: mintResult.tokenId,
+          title: requestForm.title,
+          description: requestForm.description,
+          assetType: requestForm.assetType,
+          txHash: mintResult.txHash,
+          licenseTxHash: attachTx.txHash,
+          licenseTermsId,
+          licenseType: licenseConfig.type,
+          royaltyPercent: licenseConfig.royaltyPercent,
+          creator: address,
+          registeredAt: new Date().toISOString(),
+          status: 'registered'
+        };
+
+        const existingAssets = JSON.parse(localStorage.getItem('registeredIPAssets') || '[]');
+        existingAssets.unshift(registeredAsset); // Add to beginning
+        localStorage.setItem('registeredIPAssets', JSON.stringify(existingAssets));
+        console.log('✅ Saved to localStorage:', registeredAsset);
+      } catch (storageError) {
+        console.warn('⚠️ Failed to save to localStorage:', storageError);
+      }
+
       // Clear form
-      setRequestForm({ title: '', description: '', assetType: 'Document', imageFiles: [] });
+      setRequestForm({ title: '', description: '', assetType: 'text', imageFiles: [] });
 
     } catch (err: any) {
       console.error('License attachment failed:', err);
@@ -595,11 +625,33 @@ const NewIssuerDashboard: React.FC = () => {
     );
   }
 
+  // Handle back navigation
+  const handleBack = () => {
+    const from = (location.state as any)?.from;
+    if (from) {
+      navigate(from);
+    } else {
+      navigate(-1);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen  from-blue-50 to-indigo-100" style={{backgroundColor: "rgba(230, 240, 249, 0.9)"}}>
+                  <HeroBackground />
+      
+      <div className="container mx-auto px-4 py-8" style={{ position: 'relative', zIndex: 1 }}>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Issuer Dashboard</h1>
+          {/* Back Button */}x
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className="mb-4 hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 z-100">Issuer Dashboard</h1>
           <p className="text-gray-600">Register new IP assets and manage legacy token requests.</p>
           <div className="mt-4">
             <Badge variant="outline" className="mr-2">
@@ -616,8 +668,8 @@ const NewIssuerDashboard: React.FC = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="flex flex-col">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-1">
+                <Card className="flex flex-col bg-white/20">
                     <CardHeader>
                         <CardTitle>Register New IP Asset</CardTitle>
                         <CardDescription>Use the verified Story Protocol workflow to mint a new IP asset directly on-chain.</CardDescription>
@@ -629,7 +681,7 @@ const NewIssuerDashboard: React.FC = () => {
                         </Button>
                     </CardContent>
                 </Card>
-                <Card className="flex flex-col">
+                <Card className="flex flex-col bg-white/20">
                     <CardHeader>
                         <CardTitle>Legacy Token Requests</CardTitle>
                         <CardDescription>View and manage your requests submitted through the old admin approval system.</CardDescription>
@@ -645,7 +697,7 @@ const NewIssuerDashboard: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="create" className="space-y-6">
-            <Card>
+            <Card className="bg-white/20">
               <CardHeader>
               <CardTitle>Register New IP Asset</CardTitle>
               <CardDescription>This will register your IP directly on the Story Protocol Aeneid testnet.</CardDescription>
@@ -706,7 +758,7 @@ const NewIssuerDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="requests" className="space-y-6">
-            <Card>
+            <Card className='bg-white/20'>
               <CardHeader>
                 <CardTitle>Legacy Token Requests</CardTitle>
                 <CardDescription>History of requests submitted via the admin approval system.</CardDescription>

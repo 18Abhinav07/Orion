@@ -63,7 +63,9 @@ import {
   CheckCircle,
   Lock,
   Unlock,
-  ExternalLink
+  ExternalLink,
+  BookCopy,
+  Shield
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -176,15 +178,91 @@ const MOCK_TRANSACTIONS = [
 ];
 
 const SIDEBAR_ITEMS = [
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'portfolio', label: 'Owned Assets', icon: Wallet },
-  { id: 'income', label: 'My Income', icon: DollarSign },
+  { id: 'analytics', label: 'IP Analytics', icon: BarChart3 },
+  { id: 'my-ips', label: 'My Registered IPs', icon: BookCopy },
+  { id: 'my-licenses', label: 'My Owned Licenses', icon: Shield },
+  { id: 'royalties', label: 'Royalty Dashboard', icon: DollarSign },
   { id: 'transactions', label: 'Transactions', icon: Activity },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
+interface IPAsset {
+  ipId: string;
+  tokenId: string;
+  name: string;
+  description: string;
+  assetType: string;
+  txHash: string;
+  licenseTermsId: string;
+  licenseType: string;
+  royaltyPercent: number;
+  creator: string;
+  registeredAt: string;
+  status: 'registered' | 'unregistered';
+  imageUrl?: string;
+  derivatives?: string[]; // Array of child IP IDs
+}
+
+interface LicenseToken {
+    licenseTokenId: string;
+    parentIpId: string;
+    parentIpName: string; // for display
+    mintedAt: string;
+}
+
+const MOCK_IP_ASSETS: IPAsset[] = [
+    {
+      ipId: '0x1234567890123456789012345678901234567890',
+      tokenId: '101',
+      name: 'Cosmic Echoes',
+      description: 'A sci-fi short story about an intergalactic message received by a lone astronaut.',
+      assetType: 'Text',
+      txHash: '0xabc123...',
+      licenseTermsId: '1',
+      licenseType: 'commercial_remix',
+      royaltyPercent: 10,
+      creator: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // Use a predictable address for testing
+      registeredAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'registered',
+      imageUrl: '/placeholder.svg',
+      derivatives: ['0xabcdef123456789012345678901234567891'],
+    },
+    {
+      ipId: '0xabcdef123456789012345678901234567891',
+      tokenId: '102',
+      name: 'Sunset Over Neo-Tokyo',
+      description: 'A digital painting of a futuristic city skyline.',
+      assetType: 'Image',
+      txHash: '0xdef456...',
+      licenseTermsId: '2',
+      licenseType: 'non_commercial',
+      royaltyPercent: 0,
+      creator: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      registeredAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'registered',
+      imageUrl: '/placeholder.svg',
+      derivatives: [],
+    },
+  ];
+
+  const MOCK_LICENSES: LicenseToken[] = [
+    {
+      licenseTokenId: '201',
+      parentIpId: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      parentIpName: 'The Last Stand of the Ancients',
+      mintedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        licenseTokenId: '202',
+        parentIpId: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        parentIpName: 'Melodies of the Forgotten',
+        mintedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+  ];
+
 const Dashboard: React.FC = () => {
+
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('analytics');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -202,58 +280,25 @@ const Dashboard: React.FC = () => {
   const [profileData, setProfileData] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [editProfileOpen, setEditProfileOpen] = useState(false);
   
   // Combined user data - prioritize profileData from API, fallback to auth context user
   const currentUser = profileData || user;
   
-  // Asset states
-  const [userAssets, setUserAssets] = useState<UserAsset[]>([]);
-  const [portfolioData, setPortfolioData] = useState<PortfolioData>({
-    totalInvestment: 0,
-    currentValue: 0,
-    totalReturn: 0,
-    returnPercentage: 0,
-    monthlyIncome: 0,
-    totalAssets: 0,
-    activeInvestments: 0
+  // IP-OPS states
+  const [registeredIpAssets, setRegisteredIpAssets] = useState<IPAsset[]>([]);
+  const [ownedLicenses, setOwnedLicenses] = useState<LicenseToken[]>([]);
+  const [ipPortfolioData, setIpPortfolioData] = useState({
+    totalIPs: 0,
+    totalLicenses: 0,
+    totalRoyaltiesEarned: 0,
+    claimableRevenue: 0,
   });
   const [loading, setLoading] = useState(false);
-
-  // Transaction history states
-  const [transactionHistory, setTransactionHistory] = useState<TransactionHistory[]>([]);
-  const [transactionLoading, setTransactionLoading] = useState(false);
-
-  // Notification states
-  const [notifications, setNotifications] = useState<TradingNotification[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<any[]>([]); // Keep for now, will need a new type
+  const [notifications, setNotifications] = useState<any[]>([]); // Keep for now, will need a new type
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  // Secondary marketplace states
-  const [secondaryMarketOpen, setSecondaryMarketOpen] = useState(false);
-  const [selectedTokenForTrading, setSelectedTokenForTrading] = useState<UserAsset | null>(null);
-  
-  // Legacy sell modal states (deprecated - will be removed)
-  const [sellModalOpen, setSellModalOpen] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<UserAsset | null>(null);
-  const [sellAmount, setSellAmount] = useState('');
-  const [sellLoading, setSellLoading] = useState(false);
 
-  // Asset details modal state
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedAssetForDetails, setSelectedAssetForDetails] = useState<UserAsset | null>(null);
-
-  // Cache-related loading states
-  const [loadingStates, setLoadingStates] = useState<{
-    assets: LoadingState;
-    portfolio: LoadingState;
-    transactions: LoadingState;
-    notifications: LoadingState;
-  }>({
-    assets: { isLoading: false, isFromCache: false },
-    portfolio: { isLoading: false, isFromCache: false },
-    transactions: { isLoading: false, isFromCache: false },
-    notifications: { isLoading: false, isFromCache: false }
-  });
 
   // Function to update loading states
   const updateLoadingState = (
@@ -298,6 +343,13 @@ const Dashboard: React.FC = () => {
     }
   }, [isAuthenticated, authLoading]);
 
+  // Load registered IP assets when connected and on portfolio section
+  useEffect(() => {
+    if (isConnected && address && activeSection === 'portfolio') {
+      loadRegisteredIPAssets();
+    }
+  }, [isConnected, address, activeSection]);
+
   // Refresh profile when switching to profile tab
   useEffect(() => {
     if (activeSection === 'profile' && isAuthenticated && !profileData) {
@@ -341,9 +393,9 @@ const Dashboard: React.FC = () => {
     try {
       setProfileLoading(true);
       setProfileError(null);
-      
+
       const response = await authApi.getProfile();
-      
+
       if (response.success) {
         setProfileData(response.data.user);
         toast.success('Profile data loaded successfully');
@@ -356,6 +408,42 @@ const Dashboard: React.FC = () => {
       toast.error(`Failed to load profile: ${error.message || 'Unknown error'}`);
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  // Load registered IP assets from localStorage and backend
+  const loadRegisteredIPAssets = async () => {
+    if (!address) return;
+
+    setLoadingRegisteredAssets(true);
+    try {
+      // First, load from localStorage
+      const localAssets = JSON.parse(localStorage.getItem('registeredIPAssets') || '[]');
+
+      // Filter assets created by current user
+      const userLocalAssets = localAssets.filter((asset: any) =>
+        asset.creator?.toLowerCase() === address.toLowerCase()
+      );
+
+      console.log(`📦 Loaded ${userLocalAssets.length} registered IP assets from localStorage`);
+
+      // Set the localStorage assets first for immediate display
+      setRegisteredIPAssets(userLocalAssets);
+
+      // TODO: Fetch from backend API when endpoint is available
+      // try {
+      //   const response = await fetch(`/api/registered-assets/${address}`);
+      //   const backendAssets = await response.json();
+      //   // Merge with localStorage assets, prioritizing backend data
+      //   setRegisteredIPAssets(backendAssets);
+      // } catch (apiError) {
+      //   console.warn('Backend API not available, using localStorage only:', apiError);
+      // }
+
+    } catch (error) {
+      console.error('Failed to load registered IP assets:', error);
+    } finally {
+      setLoadingRegisteredAssets(false);
     }
   };
 
@@ -2424,6 +2512,93 @@ const Dashboard: React.FC = () => {
       case 'portfolio':
         return (
           <div className="space-y-6">
+            {/* Registered IP Assets Section */}
+            {registeredIPAssets.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                      <Award className="w-5 h-5 mr-2 text-green-600" />
+                      My Registered IP Assets
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">IP assets you've registered on Story Protocol</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                    {registeredIPAssets.length} Registered
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {registeredIPAssets.map((asset: any, index: number) => (
+                    <Card key={asset.ipId || index} className="border border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base font-bold text-gray-900 line-clamp-1">
+                              {asset.title}
+                            </CardTitle>
+                            <Badge variant="outline" className="mt-2 text-xs">
+                              {asset.assetType}
+                            </Badge>
+                          </div>
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        <p className="text-sm text-gray-600 line-clamp-2">{asset.description}</p>
+
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">IP ID:</span>
+                            <span className="font-mono text-gray-900 truncate ml-2" title={asset.ipId}>
+                              {asset.ipId?.slice(0, 10)}...
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Token ID:</span>
+                            <span className="font-mono text-gray-900">#{asset.tokenId}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">License:</span>
+                            <span className="font-medium text-gray-900">
+                              {asset.licenseType === 'commercial_remix' ? 'Commercial' : 'Non-Commercial'}
+                            </span>
+                          </div>
+                          {asset.royaltyPercent > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Royalty:</span>
+                              <span className="font-medium text-green-600">{asset.royaltyPercent}%</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Registered:</span>
+                            <span className="text-gray-900">
+                              {new Date(asset.registeredAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => {
+                              window.open(`https://aeneid.storyscan.xyz/tx/${asset.txHash}`, '_blank');
+                            }}
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            View on Explorer
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Owned Assets Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Owned Assets</h1>
@@ -2434,8 +2609,8 @@ const Dashboard: React.FC = () => {
                   <Wallet className="w-4 h-4 mr-2" />
                   {userAssets.length} Assets
                 </Badge>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => isConnected && fetchUserAssetsFromBlockchain()}
                   disabled={loading || !isConnected}
@@ -3620,9 +3795,30 @@ const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Register IP Button */}
+              <Button
+                onClick={() => navigate('/issuer', { state: { from: '/dashboard' } })}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Register IP
+              </Button>
+
+              {/* Register Derivative Asset Button (Non-functional for now) */}
+              <Button
+                onClick={() => toast.error('Derivative registration feature coming soon!')}
+                variant="outline"
+                size="sm"
+                className="hidden md:flex"
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Register Derivative
+              </Button>
+
               {/* Wallet Connection */}
               {!isConnected ? (
-                <Button 
+                <Button
                   onClick={connectWallet}
                   disabled={loading}
                   className="bg-blue-600 hover:bg-blue-700 text-white"

@@ -20,6 +20,7 @@ import { getCategoryFallbackImage, getUniqueAssetImage, getDeterministicAssetIma
 import { CachedImage } from '../../components/CachedImage';
 import { imageCacheService } from '../../services/imageCacheService';
 import { marketplaceCache, MarketplaceListing } from '../../utils/marketplaceCache';
+import HeroBackground from '../../components/HeroBackground';
 
 // Alternative RPC endpoints for U2U Nebulas Testnet
 const U2U_NEBULAS_TESTNET_RPC_URLS = [
@@ -1481,6 +1482,8 @@ const Marketplace: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50/30 to-gray-100">
       {/* Professional Header */}
+                        <HeroBackground />
+
       <header className="backdrop-blur-lg bg-white/90 border-b border-gray-200/60 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
@@ -1497,20 +1500,33 @@ const Marketplace: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
-  {/* Trade Button */}
- 
+  {/* Register Asset Button */}
+  <button
+    onClick={() => navigate('/issuer', { state: { from: '/marketplace' } })}
+    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
+  >
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 4v16m8-8H4"
+      />
+    </svg>
+    <span className="font-medium">Register Asset</span>
+  </button>
 
   {/* Dashboard Button */}
-  <button 
+  <button
     onClick={() => navigate('/dashboard')}
     className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
   >
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
       />
     </svg>
     <span className="font-medium">My Dashboard</span>

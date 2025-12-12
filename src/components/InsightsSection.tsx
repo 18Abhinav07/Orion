@@ -24,17 +24,17 @@ const InsightsSection = () => {
   }, []);
 
   const insights = [
-    "Customer Retention",
-    "Seamless Integrations", 
-    "Real-Time Reports",
-    "Personalized Engagement"
+    "Immutable Ownership Records",
+    "Verifiable Creation Timestamps",
+    "Transparent Licensing History",
+    "Public IP Registry"
   ];
 
   const benefits = [
-    "Cost-Effective",
-    "Smart Spending",
-    "Data-Driven Decisions", 
-    "Increased Efficiency"
+    "Automatic Royalty Payouts",
+    "Seamless Derivative Linking",
+    "Fair Revenue Distribution",
+    "Clear Attribution Trails"
   ];
 
   return (
@@ -51,10 +51,10 @@ const InsightsSection = () => {
       <div className="max-w-[1200px] mx-auto px-6 relative z-10">
         <div className="text-center mb-16 opacity-0" data-scroll-reveal>
           <h2 className="font-jakarta text-5xl md:text-[56px] font-italic text-foreground mb-4">
-            Comprehensive Insights
+            Unveiling IP-OPS Insights
           </h2>
           <p className="font-inter text-base md:text-lg text-foreground/80 max-w-2xl mx-auto">
-            Track every campaign and customer interaction to refine engagement strategies
+            Gain unparalleled clarity into your intellectual property, from creation to monetization, all powered by Story Protocol.
           </p>
         </div>
 
@@ -63,10 +63,10 @@ const InsightsSection = () => {
           <div className="opacity-0" data-scroll-reveal>
             <div className="bg-card rounded-2xl p-8 card-shadow hover-lift">
               <h3 className="font-inter text-2xl font-semibold text-foreground mb-4">
-                Real-Time Insights
+                On-Chain Provenance & Transparency
               </h3>
               <p className="font-inter text-base text-foreground/80 mb-6 leading-relaxed">
-                Monitor your campaigns in real time to ensure maximum effectiveness and identify areas for improvement
+                Every action related to your IP is immutably recorded on the blockchain, providing undeniable proof of ownership, creation, and licensing history.
               </p>
               <div className="space-y-3">
                 {insights.map((item, i) => (
@@ -85,10 +85,10 @@ const InsightsSection = () => {
           <div className="opacity-0" data-scroll-reveal>
             <div className="bg-card rounded-2xl p-8 card-shadow hover-lift">
               <h3 className="font-inter text-2xl font-semibold text-foreground mb-4">
-                Actionable Analytics
+                Automated Royalty & Derivative Tracking
               </h3>
               <p className="font-inter text-base text-foreground/80 mb-6 leading-relaxed">
-                Leverage real-time LTV analytics to manage your loan, protect your collateral, and make informed risk decisions.
+                Experience seamless revenue distribution and automatic derivative linking, ensuring fair compensation and clear attribution across the entire IP lifecycle.
               </p>
               <div className="space-y-3">
                 {benefits.map((item, i) => (
