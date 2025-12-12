@@ -224,45 +224,57 @@ const Marketplace: React.FC = () => {
 
       console.log('✅ Fetched licensed IPs:', result.data);
 
+      // Process IPs to fetch metadata from IPFS
+      const processedIPs = await Promise.all(
+        result.data.ips.map(async (ip) => {
+          try {
+            // Fetch NFT metadata to get title and image
+            const nftMetadataUrl = ip.metadata.nftMetadataURI.replace('ipfs://', 'https://ipfs.io/ipfs/');
+            console.log(`📥 Fetching metadata for token ${ip.tokenId}:`, nftMetadataUrl);
+
+            const metadataResponse = await fetch(nftMetadataUrl);
+            if (metadataResponse.ok) {
+              const metadata = await metadataResponse.json();
+              console.log(`✅ Got metadata for token ${ip.tokenId}:`, metadata);
+
+              // Extract title/name and image
+              const title = metadata.name || metadata.title || `IP Asset #${ip.tokenId}`;
+              let imageUrl = metadata.image || '';
+
+              // Convert IPFS image URL
+              if (imageUrl && imageUrl.startsWith('ipfs://')) {
+                imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+              }
+
+              return {
+                ...ip,
+                originalFilename: title,
+                ipfsUrl: imageUrl,
+                description: metadata.description || 'No description available'
+              };
+            }
+          } catch (error) {
+            console.warn(`⚠️ Failed to fetch metadata for token ${ip.tokenId}:`, error);
+          }
+
+          // Return IP with fallback data if metadata fetch failed
+          return {
+            ...ip,
+            originalFilename: `IP Asset #${ip.tokenId}`,
+            ipfsUrl: '',
+            description: 'No description available'
+          };
+        })
+      );
+
+      console.log('✅ Processed IPs with metadata:', processedIPs);
+
       // Set licensed IPs and pagination
-      setLicensedIPs(result.data.ips);
+      setLicensedIPs(processedIPs);
       setTotalPages(result.data.pagination.totalPages);
       setLoading(false);
 
-      console.log(`📊 Found ${result.data.ips.length} licensed IPs`);
-      
-      // Initialize token contract for metadata fetching with fallback
-      let tokenContract;
-      try {
-        const signerOrProvider = signer || provider || new ethers.providers.JsonRpcProvider(
-          NETWORK_CONFIG[ACTIVE_NETWORK].rpcUrl
-        );
-        tokenContract = new ethers.Contract(TOKEN_CONTRACT, TOKEN_ABI, signerOrProvider);
-      } catch (tokenContractError) {
-        console.error('❌ Failed to initialize token contract:', tokenContractError);
-        // Continue without token contract - use fallback metadata
-      }
-      
-      // Process each listing and fetch metadata
-      const processedListings: MarketplaceListing[] = [];
-      const licensedIps = await marketplaceService.getLicensedIps();
-      const licensedIpMap = new Map(licensedIps.map(ip => [ip.ipId, ip]));
-
-      // First, collect all metadata URIs for batch processing
-      const metadataRequests: Array<{ tokenId: string; metadataURI: string; index: number }> = [];
-      const listingData: Array<{
-        tokenId: string;
-        issuer: string;
-        amount: number;
-        price: string;
-        index: number;
-      }> = [];
-      
-      // Prepare data and collect metadata URIs
-      for (let i = 0; i < tokenIds.length; i++) {
-        try {
-          // Safely convert BigNumbers to appropriate types
-          const tokenId = ethers.BigNumber.isBigNumber(tokenIds[i]) ? tokenIds[i].toString() : tokenIds[i].toString();
+      console.log(`📊 Found ${processedIPs.length} licensed IPs`);
           const issuer = issuers[i];
           const amount = ethers.BigNumber.isBigNumber(amounts[i]) ? amounts[i].toNumber() : Number(amounts[i]);
           const price = ethers.BigNumber.isBigNumber(prices[i]) ? prices[i].toString() : prices[i].toString();
@@ -704,7 +716,7 @@ const Marketplace: React.FC = () => {
           {ip.tokenId && (
             <div className="flex justify-between">
               <span className="text-gray-500">Token ID:</span>
-              <span className="font-mono text-gray-900">#{ip.tokenId}</span>
+              <span className="font-mono text-gray-900">#{ip.tokenId.toString().slice(0, 10)}</span>
             </div>
           )}
 

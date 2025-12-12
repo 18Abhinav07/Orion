@@ -74,14 +74,7 @@ const App = () => {
                     <NewIssuerDashboard />
                 } 
               />
-              <Route 
-                path="/manager" 
-                element={
-                  <ProtectedRoute allowedRoles={['manager']}>
-                    <ManagerDashboard />
-                  </ProtectedRoute>
-                } 
-              />
+             
               <Route 
                 path="/dashboard" 
                 element={
@@ -118,12 +111,7 @@ const App = () => {
                     <NewMarketplace />
                 } 
               />
-              <Route 
-                path="/testmarketplace" 
-                element={
-                    <Marketplace />
-                } 
-              />
+              
               <Route 
                 path="/orderbook" 
                 element={

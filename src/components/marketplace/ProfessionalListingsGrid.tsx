@@ -91,7 +91,6 @@ export const ProfessionalListingsGrid: React.FC<{
               <div 
                 className="absolute bottom-4 right-4 text-white text-right bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg"
               >
-                <div className="text-lg font-bold">{formatPriceInUSD(listing.price, tokenPrice)}</div>
                 {listing.license && (
                   <div className="text-xs text-green-400">{listing.license.terms.commercialRevShare}% Royalty</div>
                 )}
@@ -109,8 +108,7 @@ export const ProfessionalListingsGrid: React.FC<{
               )}
 
               <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                <span>Token #{listing.tokenId}</span>
-                <span className="font-semibold text-green-600">{listing.amount} Available</span>
+                <span>Token #{listing.tokenId.toString().slice(0, 4)}..{listing.tokenId.toString().slice(-4)}</span>
               </div>
             </div>
             
@@ -125,14 +123,7 @@ export const ProfessionalListingsGrid: React.FC<{
                   <DollarSign className="w-4 h-4 mr-2" />
                   Buy
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => onNavigateToTrading(listing)}
-                >
-                  Trade
-                </Button>
+               
               </div>
             </div>
           </motion.div>

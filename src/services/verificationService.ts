@@ -65,11 +65,14 @@ export class VerificationService {
    * This is your golden ticket, babe! 🎟️
    */
   async generateMintToken(params: {
+    title: string;
+    assetDescription: string;
     creatorAddress: string;
     contentHash: string;
     ipMetadataURI: string;
     nftMetadataURI: string;
     assetType: 'video' | 'image' | 'audio' | 'text'; // NEW REQUIRED FIELD
+    
   }): Promise<MintTokenResponse | BlockedResponse> {
     try {
       const response = await fetch(

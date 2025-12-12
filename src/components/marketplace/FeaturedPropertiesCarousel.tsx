@@ -79,13 +79,9 @@ export const FeaturedPropertiesCarousel: React.FC<{
   
               {/* Content Section */}
               <div className="lg:w-1/2 p-8 lg:p-12 text-white flex flex-col justify-center">
-                <div className="mb-4">
-                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
-                    {listings[currentIndex].attributes.find(attr => attr.trait_type === 'Asset Type')?.value}
-                  </span>
-                </div>
                 
-                <h3 className="text-3xl lg:text-4xl font-bold mb-4 leading-tight">
+                
+                <h3 className=" text-white text-3xl lg:text-4xl font-bold mb-4 leading-tight">
                   {listings[currentIndex].name}
                 </h3>
                 
@@ -94,28 +90,14 @@ export const FeaturedPropertiesCarousel: React.FC<{
                 </p>
                 
                 <div className="flex items-center justify-between mb-8">
-                  <div>
-          
-                    <div className="text-gray-200 text-sm">
-                      Price per token ({(parseFloat(listings[currentIndex].price) / Math.pow(10, 18)).toFixed(4)} Flow)
-                    </div>
-                    <div className="text-yellow-400 text-sm mt-1 font-semibold">
-                      Total Valuation: ${calculateTotalValuation(listings[currentIndex].price, listings[currentIndex].totalSupply)}
-                    </div>
-                  </div>
+                  
                   <div className="text-right">
                     <div className="text-green-400 font-bold">Token #{listings[currentIndex].tokenId}</div>
-                    <div className="text-gray-200 text-sm">{listings[currentIndex].amount} Available</div>
                   </div>
                 </div>
   
                 <div className="flex space-x-4">
-                  <button 
-                    onClick={() => onViewDetails(listings[currentIndex])}
-                    className="flex-1 px-6 py-3 bg-white text-gray-900 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold shadow-lg"
-                  >
-                    View Details
-                  </button>
+                  
                   <button 
                     onClick={() => onSelectListing(listings[currentIndex])}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-300 font-semibold shadow-lg"

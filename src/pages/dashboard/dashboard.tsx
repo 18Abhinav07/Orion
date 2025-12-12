@@ -88,6 +88,7 @@ import PortfolioSettlements from '../../components/invoice-financing/investor/Po
 // Story Protocol IP Assets
 import { useUserAssets } from '../../hooks/useUserAssets';
 import { AssetCard } from '../../components/AssetCard';
+import HeroBackground from '../../components/HeroBackground';
 
 // Mock data for sections not yet converted to real data
 const MOCK_INCOME_HISTORY = [
@@ -183,13 +184,11 @@ const MOCK_TRANSACTIONS = [
 ];
 
 const SIDEBAR_ITEMS = [
-  { id: 'analytics', label: 'IP Analytics', icon: BarChart3 },
   { id: 'my-ips', label: 'My Registered IPs', icon: BookCopy },
   { id: 'my-licenses', label: 'My Owned Licenses', icon: Shield },
   { id: 'royalties', label: 'Royalty Dashboard', icon: DollarSign },
   { id: 'transactions', label: 'Transactions', icon: Activity },
   { id: 'profile', label: 'Profile', icon: User },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
 interface IPAsset {
@@ -269,8 +268,8 @@ const MOCK_IP_ASSETS: IPAsset[] = [
 const Dashboard: React.FC = () => {
 
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('analytics');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('my-ips');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -330,6 +329,11 @@ const Dashboard: React.FC = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [transactionLoading, setTransactionLoading] = useState(false);
   const [secondaryMarketOpen, setSecondaryMarketOpen] = useState(false);
+
+  // IP and WIP Token Balances
+  const [ipBalance, setIpBalance] = useState<string>('0');
+  const [wipBalance, setWipBalance] = useState<string>('0');
+  const [balancesLoading, setBalancesLoading] = useState(false);
 
   // Backend API - Fetch user's minted IP assets from database
   const { data: backendAssets, isLoading: backendAssetsLoading, error: backendAssetsError } = useUserAssets({
@@ -392,6 +396,19 @@ const Dashboard: React.FC = () => {
       fetchUserProfile();
     }
   }, [activeSection, isAuthenticated, profileData]);
+
+  // Fetch token balances when wallet connects
+  useEffect(() => {
+    if (isConnected && provider && address) {
+      fetchTokenBalances();
+      // Refresh token balances every 15 seconds
+      const interval = setInterval(() => {
+        fetchTokenBalances();
+      }, 15000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, provider, address]);
 
   // Connect wallet function
   const connectWallet = async () => {
@@ -480,6 +497,38 @@ const Dashboard: React.FC = () => {
       console.error('Failed to load registered IP assets:', error);
     } finally {
       setLoadingRegisteredAssets(false);
+    }
+  };
+
+  // Fetch IP and WIP token balances from wallet
+  const fetchTokenBalances = async () => {
+    if (!provider || !address) {
+      console.log('Provider or address not available');
+      return;
+    }
+
+    try {
+      setBalancesLoading(true);
+
+      // Get IP balance (native token - similar to ETH)
+      const ipBalanceWei = await provider.getBalance(address);
+      const ipBalanceFormatted = ethers.utils.formatEther(ipBalanceWei);
+      setIpBalance(parseFloat(ipBalanceFormatted).toFixed(4));
+
+      // WIP is a custom token, need to fetch from contract if it exists
+      // For now, set WIP to 0 (implement when WIP token contract is available)
+      setWipBalance('0');
+
+      console.log('✅ Token balances fetched:', {
+        ip: ipBalanceFormatted,
+        wip: '0'
+      });
+    } catch (error) {
+      console.error('❌ Error fetching token balances:', error);
+      setIpBalance('0');
+      setWipBalance('0');
+    } finally {
+      setBalancesLoading(false);
     }
   };
 
@@ -2415,19 +2464,1406 @@ const Dashboard: React.FC = () => {
                 </Button>
               </div>
             </div>
-            </div>)
-        case 'my-ips':
-            return <div>My IPs Section</div>;
-        case 'my-licenses':
-            return <div>My Licenses Section</div>;
-        case 'royalties':
-            return <RoyaltyDashboard />;
-        case 'transactions':
-            return <div>Transactions Section</div>;
-        case 'profile':
-            return <div>Profile Section</div>;
-        case 'notifications':
-            return <div>Notifications Section</div>;
+
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-2">TOTAL INVESTMENT</p>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <p className="text-base md:text-lg lg:text-xl font-bold text-gray-900 truncate">
+                          {balanceVisible ? `${portfolioData.totalInvestment.toFixed(4)} Flow` : '••••••'}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setBalanceVisible(!balanceVisible)}
+                          className="h-5 w-5 p-0 flex-shrink-0"
+                        >
+                          {balanceVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        </Button>
+                      </div>
+                      <p className="text-green-600 text-xs md:text-sm">
+                        {isConnected ? '+2.4% from last month' : 'Connect wallet to view'}
+                      </p>
+                    </div>
+                    <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                      <TrendingUp className="w-4 md:w-5 h-4 md:h-5 text-gray-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-2">CURRENT VALUE</p>
+                      <p className="text-base md:text-lg lg:text-xl font-bold text-gray-900 mb-2 truncate">
+                        {balanceVisible ? `${portfolioData.currentValue.toFixed(4)} Flow` : '••••••'}
+                      </p>
+                      <p className="text-green-600 text-xs md:text-sm">
+                        +{portfolioData.returnPercentage.toFixed(2)}% total return
+                      </p>
+                    </div>
+                    <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                      <ArrowUpRight className="w-4 md:w-5 h-4 md:h-5 text-gray-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-2">TOTAL RETURN</p>
+                      <div className="flex flex-col space-y-1 mb-2">
+                        <p className="text-base md:text-lg lg:text-xl font-bold text-gray-900 truncate">
+                          {balanceVisible ? `${portfolioData.totalReturn.toFixed(4)} Flow` : '••••••'}
+                        </p>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs w-fit">
+                          +{portfolioData.returnPercentage.toFixed(2)}%
+                        </Badge>
+                      </div>
+                      <p className="text-green-600 text-xs md:text-sm">Above market average</p>
+                    </div>
+                    <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                      <TrendingUp className="w-4 md:w-5 h-4 md:h-5 text-gray-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-2">YEARLY INCOME</p>
+                      <p className="text-base md:text-lg lg:text-xl font-bold text-gray-900 mb-2 truncate">
+                        {balanceVisible ? `${portfolioData.monthlyIncome.toFixed(4)} Flow` : '••••••'}
+                      </p>
+                      <p className="text-green-600 text-xs md:text-sm">8% yield annually</p>
+                    </div>
+                    <div className="p-1.5 md:p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                      <DollarSign className="w-4 md:w-5 h-4 md:h-5 text-gray-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Charts Section - Improved Responsive Layout */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <Card className="xl:col-span-2 backdrop-blur-md bg-white/30 border border-white/20 shadow-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
+                <CardHeader className="pb-4 flex-shrink-0">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-lg md:text-xl font-bold text-gray-900">Portfolio Performance</span>
+                      <p className="text-gray-600 text-sm">6-month growth trajectory</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-gray-600">Live</span>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 min-h-0 p-4 md:p-6">
+                  <div className="h-full w-full">
+                    <PortfolioChart />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
+                <CardHeader className="pb-4 flex-shrink-0">
+                  <CardTitle>
+                    <span className="text-lg md:text-xl font-bold text-gray-900">Asset Allocation</span>
+                    <p className="text-gray-600 text-sm">Portfolio distribution</p>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 min-h-0 p-4 md:p-6">
+                  <div className="h-full w-full">
+                    <AssetAllocationChart />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+
+      case 'portfolio':
+        return (
+          <div className="space-y-6">
+            {/* Registered IP Assets Section - Backend API Primary, LocalStorage Fallback */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                    <Award className="w-5 h-5 mr-2 text-green-600" />
+                    My Registered IP Assets
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">IP assets you've registered on Story Protocol</p>
+                </div>
+                {/* Show backend summary if available, otherwise localStorage count */}
+                {backendAssets && backendAssets.assets.length > 0 ? (
+                  <div className="flex gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                      {backendAssets.summary.total} Total
+                    </Badge>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1">
+                      {backendAssets.summary.minted} Minted
+                    </Badge>
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 px-3 py-1">
+                      {backendAssets.summary.pending} Pending
+                    </Badge>
+                  </div>
+                ) : registeredIPAssets.length > 0 && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                    {registeredIPAssets.length} Local
+                  </Badge>
+                )}
+              </div>
+
+              {/* Backend API Loading State */}
+              {backendAssetsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading your registered IP assets from backend...</p>
+                </div>
+              ) : backendAssets && backendAssets.assets.length > 0 ? (
+                // PRIMARY: Show backend API assets using AssetCard
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {backendAssets.assets.map((asset) => (
+                    <AssetCard key={asset._id} asset={asset} />
+                  ))}
+                </div>
+              ) : backendAssetsError && registeredIPAssets.length > 0 ? (
+                // FALLBACK: Show localStorage assets if API fails
+                <>
+                  <Card className="border border-yellow-200 bg-yellow-50 mb-4">
+                    <CardContent className="p-4">
+                      <p className="text-yellow-800 text-sm">
+                        ⚠️ Backend API unavailable. Showing cached assets from localStorage.
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {registeredIPAssets.map((asset: any, index: number) => (
+                    <Card key={asset.ipId || index} className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base font-bold text-gray-900 line-clamp-1">
+                              {asset.title}
+                            </CardTitle>
+                            <Badge variant="outline" className="mt-2 text-xs">
+                              {asset.assetType}
+                            </Badge>
+                          </div>
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        <p className="text-sm text-gray-600 line-clamp-2">{asset.description}</p>
+
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">IP ID:</span>
+                            <span className="font-mono text-gray-900 truncate ml-2" title={asset.ipId}>
+                              {asset.ipId?.slice(0, 10)}...
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Token ID:</span>
+                            <span className="font-mono text-gray-900">#{asset.tokenId}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">License:</span>
+                            <span className="font-medium text-gray-900">
+                              {asset.licenseType === 'commercial_remix' ? 'Commercial' : 'Non-Commercial'}
+                            </span>
+                          </div>
+                          {asset.royaltyPercent > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Royalty:</span>
+                              <span className="font-medium text-green-600">{asset.royaltyPercent}%</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Registered:</span>
+                            <span className="text-gray-900">
+                              {new Date(asset.registeredAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => {
+                              window.open(`https://aeneid.storyscan.xyz/tx/${asset.txHash}`, '_blank');
+                            }}
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            View on Explorer
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                </>
+              ) : (
+                // EMPTY STATE: No backend or localStorage assets
+                <Card className="backdrop-blur-md bg-white/30 border border-dashed border-white/30">
+                  <CardContent className="text-center py-12">
+                    <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No IP Assets Registered Yet</h3>
+                    <p className="text-gray-600 mb-4">
+                      {backendAssetsError
+                        ? 'Backend API unavailable and no local cache found. Try again later or register new assets.'
+                        : 'Register your first IP asset on Story Protocol to get started.'}
+                    </p>
+                    <Button
+                      onClick={() => window.location.href = '/issuer'}
+                      variant="default"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Register IP Asset
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Owned Assets Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Owned Assets</h1>
+                <p className="text-gray-600 mt-1">Your tokenized real-world asset portfolio</p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                <Badge variant="secondary" className="bg-gray-100 text-gray-900 px-3 py-1">
+                  <Wallet className="w-4 h-4 mr-2" />
+                  {userAssets.length} Assets
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => isConnected && fetchUserAssetsFromBlockchain()}
+                  disabled={loading || !isConnected}
+                >
+                  <PieChart className="w-4 h-4 mr-2" />
+                  {loading ? 'Loading...' : 'Refresh'}
+                </Button>
+              </div>
+            </div>
+
+            {!isConnected ? (
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Connect Your Wallet</h3>
+                  <p className="text-gray-600 mb-6">Connect your wallet to view your owned assets</p>
+                  <Button onClick={connectWallet} disabled={loading}>
+                    <Wallet className="w-4 h-4 mr-2" />
+                    {loading ? 'Connecting...' : 'Connect Wallet'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : userAssets.length === 0 ? (
+              <Card className="backdrop-blur-md bg-white/30 border border-white/20 shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">No Assets Found</h3>
+                  <p className="text-gray-600 mb-6">
+                    {loading ? 'Loading your assets...' : 'You don\'t own any tokenized assets yet'}
+                  </p>
+                  {!loading && (
+                    <Button variant="outline" onClick={() => window.open('/marketplace', '_blank')}>
+                      <Building className="w-4 h-4 mr-2" />
+                      Browse Marketplace
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userAssets.map((asset, index) => {
+                  const assetValueETH = parseFloat(ethers.utils.formatEther(asset.price)) * asset.amount; // Convert Wei to U2U
+                  const IconComponent = asset.type === 'Real Estate' ? Building : 
+                                       asset.type === 'Invoice' ? FileText :
+                                       asset.type === 'Commodity' ? Coins : Leaf;
+                  
+                  return (
+                    <motion.div
+                      key={asset.tokenId}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      onClick={() => openDetailsModal(asset)}
+                      className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer border border-gray-200/50 hover:border-gray-300/50 overflow-hidden hover:scale-[1.02]"
+                    >
+                      <div className="relative overflow-hidden">
+                        {asset.image && (
+                          <CachedImage
+                            src={asset.image}
+                            alt={asset.name}
+                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700"
+                            assetType={asset.type || 'Real Estate'}
+                            tokenId={asset.tokenId}
+                          />
+                        )}
+                        
+                        {/* Asset Type Badge */}
+                        <div className="absolute top-4 left-4">
+                          <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-gray-200/50 flex items-center">
+                            <IconComponent className="w-3 h-3 mr-1" />
+                            {asset.type}
+                          </span>
+                        </div>
+                        
+                        {/* Token ID Badge */}
+                        <div className="absolute top-4 right-4">
+                          <span className="px-2 py-1 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-blue-400/50">
+                            #{asset.tokenId}
+                          </span>
+                        </div>
+                        
+                        {/* Source Badge */}
+                        <div className="absolute bottom-4 left-4">
+                          <span className={`px-3 py-1 backdrop-blur-sm rounded-full text-xs font-medium border ${
+                            asset.source === 'marketplace' 
+                              ? 'bg-blue-500/90 text-white border-blue-400/50' 
+                              : 'bg-green-500/90 text-white border-green-400/50'
+                          }`}>
+                            {asset.source === 'marketplace' ? '📊 Marketplace' : '💼 Wallet'}
+                          </span>
+                        </div>
+                        
+                        {/* Amount Badge */}
+                        <div className="absolute bottom-4 right-4">
+                          <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-gray-200/50">
+                            {asset.amount} tokens
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-6">
+                        <h3 className="font-bold text-gray-900 mb-2 group-hover:text-gray-700 transition-colors line-clamp-1">
+                          {asset.name}
+                        </h3>
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                          {asset.description}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="text-lg font-bold text-blue-600">
+                              {assetValueETH.toFixed(4)} Flow
+                            </p>
+                            <p className="text-xs text-gray-500">Total Value</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-green-600">+5.0%</p>
+                            <p className="text-xs text-gray-500">Performance</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <span className="text-xs text-gray-600">Available</span>
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            {/* Show withdraw button only for marketplace assets */}
+                            {asset.source === 'marketplace' && (
+                              <button 
+                                className="px-3 py-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleWithdrawAsset(asset);
+                                }}
+                              >
+                                <Download className="w-3 h-3 mr-1 inline" />
+                                Withdraw
+                              </button>
+                            )}
+                            
+                            <ComplianceGuard
+                              requiresKYC={true}
+                              blockingMode={false}
+                              customMessage="KYC verification required for P2P trading"
+                              onComplianceVerified={() => navigateToTradingTerminal(asset)}
+                            >
+                              <button 
+                                className="px-3 py-1 bg-gradient-to-r from-gray-800 to-black text-white rounded-lg hover:from-gray-900 hover:to-gray-800 transition-all duration-300 shadow-md hover:shadow-lg text-xs font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigateToTradingTerminal(asset);
+                                }}
+                              >
+                                <DollarSign className="w-3 h-3 mr-1 inline" />
+                                Trade
+                              </button>
+                            </ComplianceGuard>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'income':
+        return <YieldIncomeReport />;
+
+      case 'my-ips':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">My Registered IP Assets</h1>
+                <p className="text-gray-600 mt-1">IP assets you've registered on Story Protocol</p>
+              </div>
+              {backendAssets && backendAssets.assets.length > 0 && (
+                <div className="flex gap-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 px-3 py-1">
+                    {backendAssets.summary.total} Total
+                  </Badge>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1">
+                    {backendAssets.summary.minted} Minted
+                  </Badge>
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 px-3 py-1">
+                    {backendAssets.summary.pending} Pending
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {backendAssetsLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading your registered IP assets...</p>
+              </div>
+            ) : backendAssets && backendAssets.assets.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {backendAssets.assets.map((asset) => (
+                  <AssetCard key={asset._id} asset={asset} />
+                ))}
+              </div>
+            ) : backendAssetsError ? (
+              <Card className="border border-red-200 bg-red-50">
+                <CardContent className="p-12 text-center">
+                  <Award className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Assets</h3>
+                  <p className="text-red-600 mb-4">Error: {backendAssetsError.message}</p>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="outline"
+                  >
+                    Retry
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border border-dashed border-gray-300">
+                <CardContent className="text-center py-12">
+                  <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No IP Assets Registered Yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    Register your first IP asset on Story Protocol to get started.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/issuer')}
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Award className="w-4 h-4 mr-2" />
+                    Register IP Asset
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        );
+
+      case 'transactions':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Transaction History</h1>
+                <p className="text-gray-600 mt-1">View your complete trading and investment history</p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => fetchTransactionHistory(true)}
+                  disabled={transactionLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${transactionLoading ? 'animate-spin' : ''}`} />
+                  {transactionLoading ? 'Loading...' : 'Refresh'}
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
+            </div>
+
+            {/* Transaction Filters */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="bg-gray-100 text-gray-900">All Transactions</Badge>
+              <Badge variant="outline">Buys</Badge>
+              <Badge variant="outline">Sells</Badge>
+              <Badge variant="outline">Dividends</Badge>
+            </div>
+
+            {/* Transactions List */}
+            <Card className="border border-gray-200 shadow-sm">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left py-3 px-4 md:px-6 text-xs md:text-sm font-medium text-gray-600 uppercase tracking-wide">Date</th>
+                        <th className="text-left py-3 px-4 md:px-6 text-xs md:text-sm font-medium text-gray-600 uppercase tracking-wide">Asset</th>
+                        <th className="text-left py-3 px-4 md:px-6 text-xs md:text-sm font-medium text-gray-600 uppercase tracking-wide">Type</th>
+                        <th className="text-right py-3 px-4 md:px-6 text-xs md:text-sm font-medium text-gray-600 uppercase tracking-wide">Amount</th>
+                        <th className="text-right py-3 px-4 md:px-6 text-xs md:text-sm font-medium text-gray-600 uppercase tracking-wide">Price</th>
+                        <th className="text-center py-3 px-4 md:px-6 text-xs md:text-sm font-medium text-gray-600 uppercase tracking-wide">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {transactionLoading ? (
+                        // Loading state
+                        Array.from({ length: 5 }).map((_, index) => (
+                          <tr key={index} className="animate-pulse">
+                            <td className="py-3 px-4 md:px-6">
+                              <div className="h-4 bg-gray-200 rounded w-20"></div>
+                              <div className="h-3 bg-gray-200 rounded w-16 mt-1"></div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 rounded-lg"></div>
+                                <div className="flex-1">
+                                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                  <div className="h-3 bg-gray-200 rounded w-16 mt-1"></div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6">
+                              <div className="h-6 bg-gray-200 rounded w-12"></div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6 text-right">
+                              <div className="h-4 bg-gray-200 rounded w-16 ml-auto"></div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6 text-right">
+                              <div className="h-4 bg-gray-200 rounded w-20 ml-auto"></div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6 text-center">
+                              <div className="h-6 bg-gray-200 rounded w-16 mx-auto"></div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : transactionHistory.length === 0 ? (
+                        // No transactions state
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-gray-500">
+                            <Activity className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                            <p className="text-lg font-medium mb-2">No transactions found</p>
+                            <p className="text-sm">Your transaction history will appear here once you buy or sell assets.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        // Real transaction data
+                        transactionHistory.map((transaction, index) => (
+                          <tr key={transaction.hash} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-3 px-4 md:px-6 text-xs md:text-sm text-gray-900">
+                              <div>
+                                <div className="font-medium">
+                                  {new Date(transaction.timestamp).toLocaleDateString()}
+                                </div>
+                                <div className="text-gray-500 text-xs">
+                                  {new Date(transaction.timestamp).toLocaleTimeString()}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <Building className="w-4 md:w-5 h-4 md:h-5 text-gray-600" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs md:text-sm font-medium text-gray-900 truncate">
+                                    {transaction.assetName}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">
+                                    Token ID: {transaction.tokenId}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 md:px-6">
+                              <Badge 
+                                variant={transaction.type === 'buy' ? 'default' : 'secondary'}
+                                className={`text-xs ${
+                                  transaction.type === 'buy' ? 'bg-green-100 text-green-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 md:px-6 text-right text-xs md:text-sm font-medium text-gray-900">
+                              {transaction.amount} {transaction.amount === 1 ? 'token' : 'tokens'}
+                            </td>
+                            <td className="py-3 px-4 md:px-6 text-right text-xs md:text-sm font-bold text-gray-900">
+                              {parseFloat(transaction.price).toFixed(4)} Flow
+                              {transaction.platformFee && parseFloat(transaction.platformFee) > 0 && (
+                                <div className="text-xs text-gray-500">
+                                  Fee: {parseFloat(transaction.platformFee).toFixed(4)} Flow
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 md:px-6 text-center">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs cursor-pointer ${
+                                  transaction.status === 'success' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  'bg-red-50 text-red-700 border-red-200'
+                                }`}
+                                onClick={() => window.open(`https://arbiscan.io/tx/${transaction.hash}`, '_blank')}
+                                title={`View on Arbiscan: ${transaction.hash}`}
+                              >
+                                {transaction.status === 'success' ? 'Success' : 'Failed'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Load More */}
+                <div className="border-t border-gray-200 p-4 md:p-6 text-center">
+                  <Button variant="outline" size="sm">
+                    Load More Transactions
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Transaction Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">TOTAL BOUGHT</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">
+                        {calculateTransactionStats().totalBought.toFixed(4)} Flow
+                      </p>
+                      <p className="text-gray-500 text-xs md:text-sm mt-1">
+                        {calculateTransactionStats().buyTransactions} transactions
+                      </p>
+                    </div>
+                    <div className="p-2 md:p-3 bg-green-100 rounded-lg">
+                      <ArrowUpRight className="w-5 md:w-6 h-5 md:h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">TOTAL SOLD</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">
+                        {calculateTransactionStats().totalSold.toFixed(4)} Flow
+                      </p>
+                      <p className="text-gray-500 text-xs md:text-sm mt-1">
+                        {calculateTransactionStats().sellTransactions} transactions
+                      </p>
+                    </div>
+                    <div className="p-2 md:p-3 bg-red-100 rounded-lg">
+                      <ArrowDownRight className="w-5 md:w-6 h-5 md:h-6 text-red-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">DIVIDEND INCOME</p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">
+                        {calculateTransactionStats().dividendIncome.toFixed(4)} Flow
+                      </p>
+                      <p className="text-gray-500 text-xs md:text-sm mt-1">
+                        Estimated annual return (8%)
+                      </p>
+                    </div>
+                    <div className="p-2 md:p-3 bg-blue-100 rounded-lg">
+                      <DollarSign className="w-5 md:w-6 h-5 md:h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+
+      case 'profile':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Profile Settings</h1>
+                <p className="text-gray-600 mt-1">Manage your account and preferences</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button 
+                  onClick={fetchUserProfile}
+                  disabled={profileLoading}
+                  variant="outline" 
+                  className="w-fit"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${profileLoading ? 'animate-spin' : ''}`} />
+                  Refresh Profile
+                </Button>
+                <Button className="bg-gray-900 hover:bg-gray-800 text-white w-fit">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Advanced Settings
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Profile Info Card */}
+              <Card className="border border-gray-200 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="p-2 bg-gray-900 rounded-lg">
+                      <User className="w-5 md:w-6 h-5 md:h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-lg md:text-2xl font-bold text-gray-900">Profile Information</span>
+                      <p className="text-gray-600 text-sm">Your account details</p>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {profileLoading ? (
+                    <div className="flex items-center justify-center p-8">
+                      <RefreshCw className="w-6 h-6 animate-spin text-gray-400 mr-2" />
+                      <span className="text-gray-600">Loading profile...</span>
+                    </div>
+                  ) : profileError ? (
+                    <div className="text-center p-8">
+                      <div className="text-red-500 mb-4">
+                        <User className="w-12 h-12 mx-auto mb-2" />
+                        <p className="font-semibold">Failed to load profile</p>
+                        <p className="text-sm text-gray-600">{profileError}</p>
+                      </div>
+                      <Button 
+                        onClick={fetchUserProfile}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Retry
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                        <div className="relative">
+                          <Avatar className="w-20 h-20 md:w-24 md:h-24 border-4 border-gray-200">
+                            <AvatarImage src={profileData?.profilePicture || "/placeholder-avatar.jpg"} />
+                            <AvatarFallback className="bg-gray-900 text-white text-xl md:text-2xl font-bold">
+                              {profileData?.firstName?.charAt(0) || user?.firstName?.charAt(0) || 'U'}
+                              {profileData?.lastName?.charAt(0) || user?.lastName?.charAt(0) || 'S'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -bottom-2 -right-2 p-1.5 md:p-2 bg-green-500 rounded-full shadow-lg">
+                            <Check className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-center sm:text-left">
+                          <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                            {profileData?.fullName || `${profileData?.firstName || user?.firstName || 'Unknown'} ${profileData?.lastName || user?.lastName || 'User'}`}
+                          </h3>
+                          <p className="text-gray-600">
+                            {profileData?.primaryRole === 'admin' ? 'Administrator' :
+                             profileData?.primaryRole === 'issuer' ? 'Asset Issuer' :
+                             profileData?.primaryRole === 'manager' ? 'Portfolio Manager' :
+                             'Premium Account Holder'}
+                          </p>
+                          <Badge className={`${
+                            profileData?.isVerified || user?.isVerified ? 
+                            'bg-green-50 text-green-700 border-green-200' : 
+                            'bg-yellow-50 text-yellow-700 border-yellow-200'
+                          }`}>
+                            <Star className="w-3 h-3 mr-1" />
+                            {profileData?.isVerified || user?.isVerified ? 'Verified Investor' : 'Pending Verification'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">Email Address</p>
+                              <p className="text-gray-600 text-sm">{profileData?.email || user?.email || 'Not provided'}</p>
+                            </div>
+                            <Badge variant="outline" className={`${
+                              profileData?.isVerified || user?.isVerified ? 
+                              'bg-green-50 text-green-700 border-green-200' : 
+                              'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            }`}>
+                              {profileData?.isVerified || user?.isVerified ? 'Verified' : 'Pending'}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">Phone Number</p>
+                              <p className="text-gray-600 text-sm">{profileData?.phone || 'Not provided'}</p>
+                            </div>
+                            <Badge variant="outline" className={`${
+                              profileData?.phone ? 
+                              'bg-green-50 text-green-700 border-green-200' : 
+                              'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}>
+                              {profileData?.phone ? 'Provided' : 'Not Set'}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">Wallet Address</p>
+                              <p className="text-gray-600 text-sm font-mono break-all">
+                                {profileData?.walletAddress || user?.walletAddress || address || 'Not connected'}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className={`${
+                              profileData?.walletAddress || user?.walletAddress || address ? 
+                              'bg-blue-50 text-blue-700 border-blue-200' : 
+                              'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}>
+                              {profileData?.walletAddress || user?.walletAddress || address ? 'Connected' : 'Not Connected'}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {profileData?.address && (
+                          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold text-gray-900">Address</p>
+                                <p className="text-gray-600 text-sm">
+                                  {[
+                                    profileData.address.street,
+                                    profileData.address.city,
+                                    profileData.address.state,
+                                    profileData.address.country
+                                  ].filter(Boolean).join(', ') || 'Not provided'}
+                                  {profileData.address.zipCode && ` ${profileData.address.zipCode}`}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                                Address Set
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">Member Since</p>
+                              <p className="text-gray-600 text-sm">
+                                {profileData?.createdAt || user?.createdAt ? 
+                                  new Date(profileData?.createdAt || user?.createdAt).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long' 
+                                  }) : 
+                                  'Unknown'
+                                }
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              {profileData?.createdAt || user?.createdAt ? 
+                                Math.floor((Date.now() - new Date(profileData?.createdAt || user?.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)) + ' months' :
+                                'New'
+                              }
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Account Stats Card */}
+              <Card className="border border-gray-200 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="p-2 bg-gray-900 rounded-lg">
+                      <BarChart3 className="w-5 md:w-6 h-5 md:h-6 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-lg md:text-2xl font-bold text-gray-900">Account Statistics</span>
+                      <p className="text-gray-600 text-sm">Your investment journey</p>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 md:p-4 bg-green-50 rounded-lg border border-green-200 text-center">
+                      <div className="p-2 bg-green-100 rounded-lg w-fit mx-auto mb-3">
+                        <TrendingUp className="w-4 md:w-5 h-4 md:h-5 text-green-600" />
+                      </div>
+                      <p className="text-lg md:text-2xl font-bold text-green-600">{userAssets.length}</p>
+                      <p className="text-green-700 text-xs md:text-sm font-medium">Assets Owned</p>
+                    </div>
+                    
+                    <div className="p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                      <div className="p-2 bg-blue-100 rounded-lg w-fit mx-auto mb-3">
+                        <Activity className="w-4 md:w-5 h-4 md:h-5 text-blue-600" />
+                      </div>
+                      <p className="text-lg md:text-2xl font-bold text-blue-600">{transactionHistory.length}</p>
+                      <p className="text-blue-700 text-xs md:text-sm font-medium">Transactions</p>
+                    </div>
+                    
+                    <div className="p-3 md:p-4 bg-orange-50 rounded-lg border border-orange-200 text-center">
+                      <div className="p-2 bg-orange-100 rounded-lg w-fit mx-auto mb-3">
+                        <Calendar className="w-4 md:w-5 h-4 md:h-5 text-orange-600" />
+                      </div>
+                      <p className="text-lg md:text-2xl font-bold text-orange-600">
+                        {profileData?.createdAt || user?.createdAt ? 
+                          Math.floor((Date.now() - new Date(profileData?.createdAt || user?.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)) :
+                          0
+                        }
+                      </p>
+                      <p className="text-orange-700 text-xs md:text-sm font-medium">Months Active</p>
+                    </div>
+                    
+                    <div className="p-3 md:p-4 bg-purple-50 rounded-lg border border-purple-200 text-center">
+                      <div className="p-2 bg-purple-100 rounded-lg w-fit mx-auto mb-3">
+                        <Award className="w-4 md:w-5 h-4 md:h-5 text-purple-600" />
+                      </div>
+                      <p className="text-lg md:text-2xl font-bold text-purple-600">
+                        {profileData?.kycStatus === 'approved' || user?.kycStatus === 'approved' ? 'Gold' :
+                         profileData?.kycStatus === 'pending' || user?.kycStatus === 'pending' ? 'Silver' : 
+                         'Bronze'}
+                      </p>
+                      <p className="text-purple-700 text-xs md:text-sm font-medium">Tier Status</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900 text-sm">Investment Level</span>
+                      <Badge className="bg-yellow-50 text-orange-700 border-orange-200">
+                        <Award className="w-3 h-3 mr-1" />
+                        {profileData?.kycStatus === 'approved' || user?.kycStatus === 'approved' ? 'Premium Investor' :
+                         profileData?.kycStatus === 'pending' || user?.kycStatus === 'pending' ? 'Standard Investor' : 
+                         'Basic Investor'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900 text-sm">KYC Status</span>
+                      <Badge variant="outline" className={`${
+                        profileData?.kycStatus === 'approved' || user?.kycStatus === 'approved' ? 
+                        'bg-green-50 text-green-700 border-green-200' :
+                        profileData?.kycStatus === 'pending' || user?.kycStatus === 'pending' ? 
+                        'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                        'bg-red-50 text-red-700 border-red-200'
+                      }`}>
+                        {profileData?.kycStatus === 'approved' || user?.kycStatus === 'approved' ? 'Approved' :
+                         profileData?.kycStatus === 'pending' || user?.kycStatus === 'pending' ? 'Pending' : 
+                         'Not Started'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900 text-sm">User Roles</span>
+                      <div className="flex gap-1">
+                        {(profileData?.roles || user?.roles || []).map((role: string, index: number) => (
+                          <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Settings & Preferences */}
+            <Card className="border border-gray-200 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="p-2 bg-gray-900 rounded-lg">
+                    <Settings className="w-5 md:w-6 h-5 md:h-6 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-lg md:text-2xl font-bold text-gray-900">Preferences & Settings</span>
+                    <p className="text-gray-600 text-sm">Customize your experience</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 text-base md:text-lg">Notifications</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="font-medium text-gray-900">Email Notifications</p>
+                          <p className="text-sm text-gray-600">Receive updates via email</p>
+                        </div>
+                        <div className={`w-12 h-6 rounded-full relative ${
+                          profileData?.preferences?.notifications?.email !== false ? 'bg-green-500' : 'bg-gray-300'
+                        }`}>
+                          <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-all ${
+                            profileData?.preferences?.notifications?.email !== false ? 'right-0.5' : 'left-0.5'
+                          }`}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="font-medium text-gray-900">Push Notifications</p>
+                          <p className="text-sm text-gray-600">Real-time alerts</p>
+                        </div>
+                        <div className={`w-12 h-6 rounded-full relative ${
+                          profileData?.preferences?.notifications?.push ? 'bg-green-500' : 'bg-gray-300'
+                        }`}>
+                          <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-all ${
+                            profileData?.preferences?.notifications?.push ? 'right-0.5' : 'left-0.5'
+                          }`}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="font-medium text-gray-900">SMS Notifications</p>
+                          <p className="text-sm text-gray-600">Text message alerts</p>
+                        </div>
+                        <div className={`w-12 h-6 rounded-full relative ${
+                          profileData?.preferences?.notifications?.sms ? 'bg-green-500' : 'bg-gray-300'
+                        }`}>
+                          <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-all ${
+                            profileData?.preferences?.notifications?.sms ? 'right-0.5' : 'left-0.5'
+                          }`}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 text-base md:text-lg">Account Settings</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="font-medium text-gray-900">Currency Preference</p>
+                          <p className="text-sm text-gray-600">Display currency</p>
+                        </div>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          {profileData?.preferences?.currency || 'USD'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="font-medium text-gray-900">Language</p>
+                          <p className="text-sm text-gray-600">Interface language</p>
+                        </div>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          {profileData?.preferences?.language === 'en' ? 'English' :
+                           profileData?.preferences?.language === 'es' ? 'Spanish' :
+                           profileData?.preferences?.language === 'fr' ? 'French' :
+                           'English'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="font-medium text-gray-900">Last Login</p>
+                          <p className="text-sm text-gray-600">Last active session</p>
+                        </div>
+                        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                          {profileData?.lastLogin || user?.lastLogin ? 
+                            new Date(profileData?.lastLogin || user?.lastLogin).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 
+                            'Unknown'
+                          }
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'notifications':
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Trading Notifications</h1>
+                <p className="text-gray-600 mt-1">
+                  Your escrow status, order updates, and trading activities
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-200">
+                  <Bell className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">
+                    {unreadNotifications} unread
+                  </span>
+                </div>
+                {unreadNotifications > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={markAllNotificationsAsRead}
+                  >
+                    Mark All Read
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Notifications List */}
+            <Card className="border border-gray-200 shadow-sm">
+              <CardContent className="p-0">
+                {notifications.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Notifications Yet</h3>
+                    <p className="text-gray-600 mb-4">
+                      Your trading activities, escrow status, and order updates will appear here.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setActiveSection('transactions')}
+                    >
+                      View Transaction History
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 md:p-6 hover:bg-gray-50 transition-colors cursor-pointer ${
+                          !notification.read ? 'bg-blue-50/30 border-l-4 border-l-blue-500' : ''
+                        }`}
+                        onClick={() => markNotificationAsRead(notification.id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <div className={`p-2 rounded-lg ${
+                                notification.type === 'order_created' ? 'bg-blue-100' :
+                                notification.type === 'order_filled' ? 'bg-green-100' :
+                                notification.type === 'order_cancelled' ? 'bg-red-100' :
+                                notification.type === 'escrow_released' ? 'bg-yellow-100' :
+                                'bg-gray-100'
+                              }`}>
+                                {notification.type === 'order_created' && (
+                                  <Activity className={`w-4 h-4 ${
+                                    notification.orderData?.orderType === 'buy' ? 'text-blue-600' : 'text-orange-600'
+                                  }`} />
+                                )}
+                                {notification.type === 'order_filled' && (
+                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                )}
+                                {notification.type === 'trade_completed' && (
+                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                )}
+                                {notification.type === 'escrow_released' && (
+                                  <Unlock className="w-4 h-4 text-yellow-600" />
+                                )}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm md:text-base font-semibold text-gray-900 truncate">
+                                  {notification.title}
+                                </h4>
+                                <p className="text-xs md:text-sm text-gray-600 mt-1 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Order Details */}
+                            {notification.orderData && (
+                              <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs md:text-sm">
+                                  <div>
+                                    <p className="font-medium text-gray-600">Asset</p>
+                                    <p className="text-gray-900 truncate">{notification.orderData.assetName}</p>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-600">Amount</p>
+                                    <p className="text-gray-900">{notification.orderData.amount} tokens</p>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-600">Price</p>
+                                    <p className="text-gray-900">{notification.orderData.price} Flow</p>
+                                  </div>
+                                  {notification.orderData.escrowAmount && (
+                                    <div>
+                                      <p className="font-medium text-gray-600">Escrow</p>
+                                      <p className="text-gray-900">{notification.orderData.escrowAmount} Flow</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col items-end space-y-2 flex-shrink-0 ml-4">
+                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              notification.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              notification.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {notification.status}
+                            </div>
+                            
+                            <div className="text-xs text-gray-500">
+                              {new Date(notification.timestamp).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+
+                            {!notification.read && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Transaction Hash Link */}
+                        {notification.transactionHash && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`https://www.flowscan.io/tx/${notification.transactionHash}`, '_blank');
+                              }}
+                              className="text-xs"
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              View Transaction
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">ACTIVE ORDERS</p>
+                      <p className="text-xl md:text-2xl font-bold text-blue-600">
+                        {notifications.filter(n => n.status === 'pending' && n.type === 'order_created').length}
+                      </p>
+                    </div>
+                    <div className="p-2 md:p-3 bg-blue-100 rounded-lg">
+                      <Activity className="w-5 md:w-6 h-5 md:h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">COMPLETED TRADES</p>
+                      <p className="text-xl md:text-2xl font-bold text-green-600">
+                        {notifications.filter(n => n.status === 'completed').length}
+                      </p>
+                    </div>
+                    <div className="p-2 md:p-3 bg-green-100 rounded-lg">
+                      <CheckCircle className="w-5 md:w-6 h-5 md:h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">FUNDS ESCROWED</p>
+                      <p className="text-xl md:text-2xl font-bold text-yellow-600">
+                        {notifications
+                          .filter(n => n.status === 'pending' && n.orderData?.escrowAmount)
+                          .reduce((sum, n) => sum + parseFloat(n.orderData?.escrowAmount || '0'), 0)
+                          .toFixed(4)} Flow
+                      </p>
+                    </div>
+                    <div className="p-2 md:p-3 bg-yellow-100 rounded-lg">
+                      <Lock className="w-5 md:w-6 h-5 md:h-6 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="space-y-6">
@@ -2445,7 +3881,8 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex ${darkMode ? 'dark bg-gray-900' : ''}`} style={{backgroundColor: darkMode ? '' : "rgba(230, 240, 249, 0.9)"}}>
+      <HeroBackground />
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -2456,105 +3893,129 @@ const Dashboard: React.FC = () => {
 
       {/* Sidebar */}
       <motion.div
-        className={`fixed left-0 top-0 h-full shadow-lg z-50 transition-all duration-300 ${ 
-          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white' 
-        } ${ 
-          sidebarCollapsed ? 'w-16' : 'w-64' 
-        } ${ 
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full' 
-        } lg:translate-x-0`}
+        className={`fixed left-0 top-0 h-full shadow-lg z-50 transition-all duration-300 backdrop-blur-md ${
+          darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/40 border-white/20'
+        } ${
+          sidebarCollapsed ? 'w-16' : 'w-64'
+        } ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 border-r`}
         initial={false}
         animate={{
           width: sidebarCollapsed ? 64 : 256
         }}
+        transition={{ duration: 0.3 }}
       >
         {/* Logo */}
-        <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${ 
-                darkMode ? 'bg-gray-100' : 'bg-gray-900'
-              }`}>
-                <Home className={`w-5 h-5 ${darkMode ? 'text-gray-900' : 'text-white'}`} />
-              </div>
-              {!sidebarCollapsed && (
-                <div>
-                  <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>AssetDash</p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Portfolio Manager</p>
-                </div>
-              )}
-            </div>
-            {/* Mobile Close Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+        <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
+          <div className="flex items-center space-x-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+          darkMode ? 'bg-gray-100' : 'bg-gray-900'
+        }`}>
+          <Home className={`w-5 h-5 ${darkMode ? 'text-gray-900' : 'text-white'}`} />
+        </div>
+        {!sidebarCollapsed && (
+          <div>
+            <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Orion</p>
           </div>
+        )}
+          </div>
+          {/* Mobile Close Button */}
+          <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setMobileMenuOpen(false)}
+        className="lg:hidden"
+          >
+        <X className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Navigation */}
-        <nav className="p-4">
+        <nav className="p-4 flex-1">
           <div className="space-y-2">
-            {SIDEBAR_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === 'royalties') {
-                    navigate('/royalty-dashboard');
-                  } else {
-                    setActiveSection(item.id);
-                  }
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors relative ${ 
-                  activeSection === item.id
-                    ? `${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`
-                    : `${darkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {!sidebarCollapsed && (
-                  <span className="font-medium flex-1 text-left">{item.label}</span>
-                )}
-                {!sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
-                  <div className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </div>
-                )}
-                {sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
-                  <div className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </div>
-                )}
-              </button>
-            ))}
+        {SIDEBAR_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => {
+          setActiveSection(item.id);
+          setMobileMenuOpen(false); // Close mobile menu when item is selected
+            }}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors relative group ${
+          activeSection === item.id
+            ? `${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'}`
+            : `${darkMode ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`
+            }`}
+            title={sidebarCollapsed ? item.label : ''}
+          >
+            <item.icon className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && (
+          <span className="font-medium flex-1 text-left">{item.label}</span>
+            )}
+            {!sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
+          <div className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full flex-shrink-0">
+            {unreadNotifications > 99 ? '99+' : unreadNotifications}
+          </div>
+            )}
+            {sidebarCollapsed && item.id === 'notifications' && unreadNotifications > 0 && (
+          <div className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full">
+            {unreadNotifications > 9 ? '9+' : unreadNotifications}
+          </div>
+            )}
+            {/* Tooltip for collapsed view */}
+            {sidebarCollapsed && (
+          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            {item.label}
+          </div>
+            )}
+          </button>
+        ))}
           </div>
         </nav>
 
-        {/* Collapse Button - Desktop Only */}
-        <div className="absolute bottom-4 left-4 right-4 hidden lg:block">
+        {/* Collapse Button - Desktop Only (Improved) */}
+        <div className={`hidden lg:flex items-center justify-center p-4 border-t ${
+          darkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full justify-center hover:bg-gray-100"
+        variant="ghost"
+        size="sm"
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className={`w-full group relative ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <ChevronRight className={`w-4 h-4 transition-transform ${sidebarCollapsed ? '' : 'rotate-180'}`} />
+        <div className="flex items-center justify-center space-x-2 w-full">
+          <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+          {!sidebarCollapsed && (
+            <span className="text-sm font-medium">Collapse</span>
+          )}
+        </div>
           </Button>
         </div>
+
+        {/* Floating Collapse Button - Alternative for better UX (Optional) */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`hidden lg:flex absolute -right-4 top-24 p-1 h-8 w-8 rounded-full shadow-lg border ${
+        darkMode 
+          ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-white' 
+          : 'bg-white border-gray-200 hover:bg-gray-100 text-gray-900'
+          }`}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+        </Button>
       </motion.div>
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${ 
-        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64' 
-      } ml-0`}>
+      <div className={`flex-1 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+      } ml-0`} style={{position: 'relative', zIndex: 1}}>
         {/* Header */}
-        <header className={`border-b px-4 md:px-6 py-4 ${ 
-          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200' 
+        <header className={`border-b px-4 md:px-6 py-4 backdrop-blur-md ${
+          darkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white/30 border-white/20'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -2579,7 +4040,7 @@ const Dashboard: React.FC = () => {
               {/* Register IP Button */}
               <Button
                 onClick={() => navigate('/issuer', { state: { from: '/dashboard' } })}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-black/80 hover:bg-black-700 text-white"
                 size="sm"
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -2587,15 +4048,7 @@ const Dashboard: React.FC = () => {
               </Button>
 
               {/* Register Derivative Asset Button (Non-functional for now) */}
-              <Button
-                onClick={() => toast.error('Derivative registration feature coming soon!')}
-                variant="outline"
-                size="sm"
-                className="hidden md:flex"
-              >
-                <Briefcase className="w-4 h-4 mr-2" />
-                Register Derivative
-              </Button>
+             
 
               {/* Wallet Connection */}
               {!isConnected ? (
@@ -2609,10 +4062,30 @@ const Dashboard: React.FC = () => {
                 </Button>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-green-700">Connected</span>
+                  {/* Token Balances */}
+                  <div className="hidden lg:flex items-center space-x-3 px-3 py-2 backdrop-blur-md bg-white/40 border border-white/30 rounded-lg shadow-sm">
+                    <div className="flex items-center space-x-2">
+                      <Coins className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">IP Balance</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {balancesLoading ? '...' : ipBalance}
+                        </p>
+                      </div>
+                    </div>
+                    <Separator orientation="vertical" className="h-8" />
+                    <div className="flex items-center space-x-2">
+                      <Shield className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">WIP Balance</p>
+                        <p className="text-sm font-bold text-gray-900">
+                          {balancesLoading ? '...' : wipBalance}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                 
                   <Button
                     variant="outline"
                     size="sm"
@@ -2620,33 +4093,19 @@ const Dashboard: React.FC = () => {
                     disabled={loading}
                     className="hidden md:flex"
                   >
-                    {loading ? 'Loading...' : 'Refresh'}
+                    {loading ? 'Loading...' : <RefreshCw className="w-4 h-4" />}
                   </Button>
                 </div>
               )}
               
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setDarkMode(!darkMode)}
-                className={`hidden md:flex ${ 
-                  darkMode ? 'hover:bg-gray-700 text-yellow-400' : 'hover:bg-gray-100 text-gray-600' 
-                }`}
-              >
-                <Lightbulb className={`w-5 h-5 ${darkMode ? 'fill-current' : ''}`} />
-              </Button>
-              <Button variant="ghost" size="sm" className="hidden md:flex">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="hidden md:flex">
-                <Settings className="w-5 h-5" />
-              </Button>
+             
+              
               <Separator orientation="vertical" className="h-6 hidden md:block" />
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="text-red-600 hover:text-red-700"
-                onClick={() => navigate('/marketplace')}
+                onClick={() => navigate('/')}
               >
                 <LogOut className="w-5 h-5" />
               </Button>

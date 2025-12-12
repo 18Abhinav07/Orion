@@ -45,6 +45,10 @@ const NewMarketplace: React.FC = () => {
     loadMarketplaceListings();
   }, []);
 
+  const handlenavigate = () => {
+    navigate('/dashboard');
+  }
+
   const loadMarketplaceListings = async (forceRefresh: boolean = false) => {
     console.log(`🔄 Loading licensed IPs from backend (forceRefresh: ${forceRefresh})`);
     setLoading(true);
@@ -54,43 +58,81 @@ const NewMarketplace: React.FC = () => {
       const licensedIps = await marketplaceService.getLicensedIps();
       console.log(`📜 Fetched ${licensedIps.length} licensed IPs from backend`);
 
-      // Transform licensed IPs to marketplace listings format
-      const processedListings: MarketplaceListing[] = licensedIps.map((ip) => ({
-        tokenId: ip.ipId, // Use ipId as tokenId for display
-        name: `IP Asset #${ip.tokenId}`,
-        description: `Licensed IP Asset - Token ID: ${ip.tokenId}`,
-        image: ip.metadata.nftMetadataURI || '', // Will fetch from IPFS if needed
-        price: '0', // License minting fee will be fetched from license terms
-        amount: 999, // Unlimited for license tokens
-        totalSupply: 1,
-        seller: ip.creatorAddress,
-        metadataURI: ip.metadata.ipMetadataURI || '',
-        attributes: [
-          { trait_type: 'IP ID', value: ip.ipId },
-          { trait_type: 'Token ID', value: ip.tokenId.toString() },
-          { trait_type: 'License Terms ID', value: ip.license.licenseTermsId },
-          { trait_type: 'Status', value: ip.status }
-        ],
-        license: {
-          ipId: ip.ipId,
-          licenseTermsId: ip.license.licenseTermsId,
-          terms: {
-            transferable: true,
-            commercialUse: true, // Default values - should be fetched from chain
-            commercialRevShare: 10,
-            derivativesAllowed: true,
-            defaultMintingFee: '0',
-            currency: '0x0000000000000000000000000000000000000000'
-          },
-          stats: {
-            totalLicensesMinted: 0,
-            activeLicensees: 0
+      // Transform licensed IPs to marketplace listings format with metadata fetching
+      const processedListings: MarketplaceListing[] = await Promise.all(
+        licensedIps.map(async (ip) => {
+          let title = `IP Asset #${ip.tokenId}`;
+          let description = `Licensed IP Asset - Token ID: ${ip.tokenId}`;
+          let imageUrl = '';
+
+          // Fetch NFT metadata to get title and image
+          try {
+            const nftMetadataUrl = ip.metadata.nftMetadataURI.replace('ipfs://', 'https://ipfs.io/ipfs/');
+            console.log(`📥 Fetching metadata for token ${ip.tokenId}:`, nftMetadataUrl);
+
+            const metadataResponse = await fetch(nftMetadataUrl);
+            if (metadataResponse.ok) {
+              const metadata = await metadataResponse.json();
+              console.log(`✅ Got metadata for token ${ip.tokenId}:`, metadata);
+
+              // Extract title/name and image
+              title = metadata.name || metadata.title || title;
+              description = metadata.description || description;
+              imageUrl = metadata.image || '';
+
+              // Convert IPFS image URL
+              if (imageUrl && imageUrl.startsWith('ipfs://')) {
+                imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+              }
+            }
+          } catch (error) {
+            console.warn(`⚠️ Failed to fetch metadata for token ${ip.tokenId}:`, error);
           }
-        }
-      }));
+
+          return {
+            tokenId: ip.ipId, // Use ipId as tokenId for display
+            name: title,
+            description,
+            image: imageUrl || 'https://via.placeholder.com/400x300?text=IP+Asset',
+            price: '0', // License minting fee will be fetched from license terms
+            amount: 999, // Unlimited for license tokens
+            totalSupply: 1,
+            seller: ip.creatorAddress,
+            metadataURI: ip.metadata.ipMetadataURI || '',
+            type: 'IP Asset',
+            category: 'Intellectual Property',
+            attributes: [
+              { trait_type: 'IP ID', value: ip.ipId },
+              { trait_type: 'Token ID', value: ip.tokenId.toString() },
+              { trait_type: 'License Terms ID', value: ip.license.licenseTermsId },
+              { trait_type: 'License Type', value: ip.license.licenseType === 'commercial_remix' ? 'Commercial Remix' : 'Non-Commercial' },
+              { trait_type: 'Royalty', value: `${ip.license.royaltyPercent}%` },
+              { trait_type: 'Derivatives Allowed', value: ip.license.allowDerivatives ? 'Yes' : 'No' },
+              { trait_type: 'Commercial Use', value: ip.license.commercialUse ? 'Yes' : 'No' },
+              { trait_type: 'Status', value: ip.status }
+            ],
+            license: {
+              ipId: ip.ipId,
+              licenseTermsId: ip.license.licenseTermsId,
+              terms: {
+                transferable: true,
+                commercialUse: ip.license.commercialUse,
+                commercialRevShare: ip.license.royaltyPercent,
+                derivativesAllowed: ip.license.allowDerivatives,
+                defaultMintingFee: '0',
+                currency: '0x0000000000000000000000000000000000000000'
+              },
+              stats: {
+                totalLicensesMinted: 0,
+                activeLicensees: 0
+              }
+            }
+          };
+        })
+      );
 
       setListings(processedListings);
-      console.log(`✅ Processed ${processedListings.length} licensed IP listings`);
+      console.log(`✅ Processed ${processedListings.length} licensed IP listings with metadata`);
     } catch (error) {
       console.error('❌ Error loading licensed IPs:', error);
       toast.error('Failed to load licensed IP assets');
@@ -172,21 +214,22 @@ const NewMarketplace: React.FC = () => {
       <HeroBackground />
       
       {/* Hero Section */}
-      <BackgroundBeamsWithCollision className="relative">
         <div className="container mx-auto px-4 py-20 relative z-10">
-          <motion.div 
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+          
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-black  bg-clip-text text-transparent">
               License Marketplace
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Discover and mint license tokens for intellectual property assets powered by Story Protocol
-            </p>
-          </motion.div>
+             {!loading && (
+          <div className="fixed top-6 left-9 z-50">
+            <button
+              onClick={() => loadMarketplaceListings(true)}
+              className="mx-auto bg-black/50 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+            >
+              🔄 
+            </button>
+          </div>
+        )}
+           
 
           {/* Featured Carousel */}
           {!loading && listings.length > 0 && (
@@ -200,17 +243,27 @@ const NewMarketplace: React.FC = () => {
             />
           )}
         </div>
-      </BackgroundBeamsWithCollision>
+        
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 relative z-10">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="grid grid-cols-3 w-full max-w-2xl mx-auto">
+          <TabsList className="grid grid-cols-3 w-full max-w-2xl mx-auto relative">
             <TabsTrigger value="all">All Licensed IPs</TabsTrigger>
             <TabsTrigger value="commercial">Commercial Use</TabsTrigger>
             <TabsTrigger value="derivatives">Derivatives Allowed</TabsTrigger>
           </TabsList>
+          <div className="fixed top-11 right-9 z-50">
+            <button 
+              className="bg-black/50 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+              onClick={handlenavigate}
+            >
+              Go to Dashboard
+            </button>
+          </div>
+
+         
 
           <TabsContent value={activeTab} className="mt-8">
             <ProfessionalListingsGrid
@@ -229,17 +282,7 @@ const NewMarketplace: React.FC = () => {
         </Tabs>
 
         {/* Refresh Button */}
-        {!loading && (
-          <div className="text-center mt-8">
-            <Button
-              variant="outline"
-              onClick={() => loadMarketplaceListings(true)}
-              className="mx-auto"
-            >
-              🔄 Refresh Marketplace
-            </Button>
-          </div>
-        )}
+        
       </div>
 
       {/* Modals */}
