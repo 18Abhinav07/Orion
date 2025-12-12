@@ -10,8 +10,8 @@ import 'dotenv/config';
 // --- CONFIGURATION ---
 const CONTRACT_PATH = path.resolve('contracts', 'OrionVerifiedMinter.sol');
 const CONTRACT_NAME = 'OrionVerifiedMinter';
-const RPC_URL = 'https://aeneid.storyrpc.io';
-const REGISTRATION_WORKFLOWS_ADDRESS = '0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424'; // Story Protocol's RegistrationWorkflows
+const RPC_URL = process.env.VITE_STORY_RPC_URL || 'https://aeneid.storyrpc.io';
+const REGISTRATION_WORKFLOWS_ADDRESS = process.env.VITE_REGISTRATION_WORKFLOWS || '0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424'; // Story Protocol's RegistrationWorkflows
 
 // Read private keys from .env
 const DEPLOYER_PRIVATE_KEY = process.env.STORY_PRIVATE_KEY;
@@ -19,7 +19,7 @@ const BACKEND_VERIFIER_PRIVATE_KEY = process.env.PLATFORM_WALLET_PRIVATE_KEY;
 
 // Define the Story Aeneid testnet for viem
 const aeneidChain = defineChain({
-    id: 1315,
+    id: Number(process.env.VITE_STORY_CHAIN_ID) || 1315,
     name: 'Story Aeneid Testnet',
     network: 'aeneid',
     nativeCurrency: {
