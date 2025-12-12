@@ -6,6 +6,9 @@ import { getLicenseTermsId, attachLicenseTermsToIp } from '../services/licenseSe
 import { SimilarityWarningModal } from '../components/SimilarityWarningModal';
 import { SimilarityBlockedModal } from '../components/SimilarityBlockedModal';
 import { uploadJSONToIPFS } from '../services/pinataService';
+import { useAccount } from 'wagmi';
+import { useUserAssets } from '../hooks/useUserAssets';
+import { AssetCard } from '../components/AssetCard';
 
 // Type for mint result since we're not using storyProtocolService anymore
 interface MintResult {
@@ -612,6 +615,8 @@ export default function TestMinting() {
           </div>
         )}
 
+        <MintedAssets />
+
         {/* Info Section */}
         <div className="mt-8 bg-white/5 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-2">ℹ️ What This Tests:</h3>
@@ -648,6 +653,35 @@ export default function TestMinting() {
           }}
           blockedInfo={similarityData}
         />
+      )}
+    </div>
+  );
+}
+
+function MintedAssets() {
+  const { address } = useAccount();
+  const { data, isLoading, error } = useUserAssets({ walletAddress: address as string });
+
+  if (!address) {
+    return (
+      <div className="mt-8 bg-white/5 rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-2">Your Minted Assets</h3>
+        <p>Please connect your wallet to see your minted assets.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 bg-white/5 rounded-lg p-6">
+      <h3 className="text-lg font-semibold mb-2">Your Minted Assets</h3>
+      {isLoading && <p>Loading your assets...</p>}
+      {error && <p>Error loading assets: {error.message}</p>}
+      {data && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {data.assets.map((asset) => (
+            <AssetCard key={asset._id} asset={asset} />
+          ))}
+        </div>
       )}
     </div>
   );
