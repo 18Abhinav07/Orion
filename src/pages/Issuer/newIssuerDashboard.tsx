@@ -41,10 +41,7 @@ const AENEID_CONFIG = {
 };
 
 const assetTypes = [
-  
-  'Artwork',
-  'Codebase',
-  'Document',
+ 'text'
   
 ];
 
@@ -87,7 +84,7 @@ const NewIssuerDashboard: React.FC = () => {
   const [requestForm, setRequestForm] = useState({
     title: '',
     description: '',
-    assetType: 'Document',
+    assetType: 'text',
     imageFiles: [] as File[]
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -599,7 +596,7 @@ const NewIssuerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-white from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Issuer Dashboard</h1>
@@ -676,7 +673,7 @@ const NewIssuerDashboard: React.FC = () => {
                 <div>
                   <Label htmlFor="document">Upload Document (Optional)</Label>
                   <Input 
-                  id="document" 
+                  id="text" 
                   type="file" 
                   accept=".txt,.md,.pdf,.doc,.docx,.odt,.rtf" 
                   onChange={(e) => { 
@@ -852,7 +849,7 @@ const NewIssuerDashboard: React.FC = () => {
           isOpen={showBlockedModal}
           onClose={() => {
             setShowBlockedModal(false);
-            setRequestForm({ title: '', description: '', assetType: 'Document', imageFiles: [] });
+            setRequestForm({ title: '', description: '', assetType: 'text', imageFiles: [] });
           }}
           blockedInfo={similarityData}
         />
