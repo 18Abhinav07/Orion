@@ -1,23 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// Interface for the Story Protocol SPG-NFT contract
-interface ISPGNFT {
+// Interface for the Story Protocol RegistrationWorkflows contract
+interface IRegistrationWorkflows {
     function mintAndRegisterIp(
+        address spgNftContract,
         address recipient,
-        string memory tokenURI
+        IPMetadata calldata ipMetadata
     ) external returns (address ipId, uint256 tokenId);
+}
+
+struct IPMetadata {
+    string ipMetadataURI;
+    bytes32 ipMetadataHash;
+    string nftMetadataURI;
+    bytes32 nftMetadataHash;
 }
 
 /**
  * @title OrionVerifiedMinter
- * @dev This contract acts as a wrapper for the SPG-NFT contract.
+ * @dev This contract acts as a wrapper for Story Protocol's RegistrationWorkflows.
  * It verifies a backend-generated signature before allowing a mint to proceed.
  * This ensures that only users authorized by the Orion backend can mint IP assets.
  */
 contract OrionVerifiedMinter {
     address public immutable BACKEND_VERIFIER_ADDRESS;
-    ISPGNFT public SPG_NFT_CONTRACT;
+    address public REGISTRATION_WORKFLOWS;
+    address public SPG_NFT_CONTRACT;
     address public owner;
 
     mapping(uint256 => bool) public usedNonces;
@@ -29,7 +38,7 @@ contract OrionVerifiedMinter {
         address signer
     );
 
-    event SpgContractUpdated(address indexed newSpgContract);
+    event ContractsUpdated(address indexed registrationWorkflows, address indexed spgContract);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -38,10 +47,13 @@ contract OrionVerifiedMinter {
 
     /**
      * @param _backendVerifier The address of the backend service authorized to sign minting requests.
+     * @param _registrationWorkflows The Story Protocol RegistrationWorkflows contract address.
      */
-    constructor(address _backendVerifier) {
+    constructor(address _backendVerifier, address _registrationWorkflows) {
         require(_backendVerifier != address(0), "Backend verifier address cannot be zero");
+        require(_registrationWorkflows != address(0), "RegistrationWorkflows address cannot be zero");
         BACKEND_VERIFIER_ADDRESS = _backendVerifier;
+        REGISTRATION_WORKFLOWS = _registrationWorkflows;
         owner = msg.sender;
     }
 
@@ -51,8 +63,8 @@ contract OrionVerifiedMinter {
      */
     function setSpgNftContract(address _spgNftContract) external onlyOwner {
         require(_spgNftContract != address(0), "SPG NFT contract address cannot be zero");
-        SPG_NFT_CONTRACT = ISPGNFT(_spgNftContract);
-        emit SpgContractUpdated(_spgNftContract);
+        SPG_NFT_CONTRACT = _spgNftContract;
+        emit ContractsUpdated(REGISTRATION_WORKFLOWS, _spgNftContract);
     }
 
     /**
@@ -76,7 +88,7 @@ contract OrionVerifiedMinter {
         uint256 expiryTimestamp,
         bytes memory signature
     ) external returns (address ipId, uint256 tokenId) {
-        require(address(SPG_NFT_CONTRACT) != address(0), "SPG contract address not set");
+        require(SPG_NFT_CONTRACT != address(0), "SPG contract address not set");
         require(block.timestamp <= expiryTimestamp, "Token expired");
         require(!usedNonces[nonce], "Nonce already used");
 
@@ -94,7 +106,19 @@ contract OrionVerifiedMinter {
 
         usedNonces[nonce] = true;
 
-        (ipId, tokenId) = SPG_NFT_CONTRACT.mintAndRegisterIp(recipient, nftMetadataURI);
+        // Call RegistrationWorkflows.mintAndRegisterIp instead of SPG directly
+        IPMetadata memory ipMetadata = IPMetadata({
+            ipMetadataURI: ipMetadataURI,
+            ipMetadataHash: keccak256(bytes(ipMetadataURI)),
+            nftMetadataURI: nftMetadataURI,
+            nftMetadataHash: keccak256(bytes(nftMetadataURI))
+        });
+
+        (ipId, tokenId) = IRegistrationWorkflows(REGISTRATION_WORKFLOWS).mintAndRegisterIp(
+            SPG_NFT_CONTRACT,
+            recipient,
+            ipMetadata
+        );
 
         emit IpAssetMinted(recipient, ipId, tokenId, signer);
 

@@ -24,6 +24,7 @@ import "./utils/dummyDataUtils";
 import "./utils/cacheCleanupScript";
 import OrderBookPage from "./pages/orderbook/OrderBookPage";
 import TradingPage from "./pages/trading/TradingPage";
+import TestMinting from "./pages/TestMinting";
 
 const App = () => {
   useEffect(() => {
@@ -119,6 +120,10 @@ const App = () => {
                     <TradingPage />
                   </ProtectedRoute>
                 } 
+              />
+              <Route 
+                path="/test-minting" 
+                element={<TestMinting />} 
               />
               
               <Route path="*" element={<NotFound />} />

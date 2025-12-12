@@ -11,6 +11,7 @@ import 'dotenv/config';
 const CONTRACT_PATH = path.resolve('contracts', 'OrionVerifiedMinter.sol');
 const CONTRACT_NAME = 'OrionVerifiedMinter';
 const RPC_URL = 'https://aeneid.storyrpc.io';
+const REGISTRATION_WORKFLOWS_ADDRESS = '0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424'; // Story Protocol's RegistrationWorkflows
 
 // Read private keys from .env
 const DEPLOYER_PRIVATE_KEY = process.env.STORY_PRIVATE_KEY;
@@ -105,11 +106,14 @@ async function main() {
     console.warn('Warning: Deployer wallet has a zero balance. You might need to fund it using the Aeneid testnet faucet.');
   }
 
-  // 3. Deploy OrionVerifiedMinter
+  // 3. Deploy OrionVerifiedMinter (now requires RegistrationWorkflows address)
   console.log('Deploying OrionVerifiedMinter...');
   const contractFactory = new ethers.ContractFactory(abi, bytecode, deployerWallet);
   
-  const orionVerifiedMinter = await contractFactory.deploy(backendVerifierAddress);
+  const orionVerifiedMinter = await contractFactory.deploy(
+    backendVerifierAddress,
+    REGISTRATION_WORKFLOWS_ADDRESS // Pass RegistrationWorkflows address to constructor
+  );
 
   console.log(`Deployment transaction sent. Hash: ${orionVerifiedMinter.deployTransaction.hash}`);
   await orionVerifiedMinter.deployed();
@@ -117,9 +121,6 @@ async function main() {
   
   // 4. Create SPG collection via RegistrationWorkflows contract
   console.log('Creating SPG NFT Collection via RegistrationWorkflows...');
-  
-  // Story Protocol RegistrationWorkflows contract address (Aeneid Testnet)
-  const REGISTRATION_WORKFLOWS_ADDRESS = '0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424';
   
   // ABI for createCollection function
   const registrationWorkflowsABI = [
@@ -168,7 +169,7 @@ async function main() {
     mintFeeRecipient: deployerWallet.address,
     owner: deployerWallet.address,
     mintOpen: true,
-    isPublicMinting: false
+    isPublicMinting: true // ✅ Allow wrapper contract to mint
   };
 
   console.log('Creating SPG NFT Collection with params:', {
