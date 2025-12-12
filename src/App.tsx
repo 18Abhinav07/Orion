@@ -24,6 +24,7 @@ import "./utils/cacheCleanupScript";
 import OrderBookPage from "./pages/orderbook/OrderBookPage";
 import TradingPage from "./pages/trading/TradingPage";
 import TestMinting from "./pages/TestMinting";
+import LicenseAttachment from "./pages/LicenseAttachment";
 import "./styles/HeroBackground.css";
 
 const App = () => {
@@ -107,6 +108,10 @@ const App = () => {
               <Route 
                 path="/test-minting" 
                 element={<TestMinting />} 
+              />
+              <Route 
+                path="/license-attachment" 
+                element={<LicenseAttachment />} 
               />
               
               <Route path="*" element={<NotFound />} />
