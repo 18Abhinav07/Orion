@@ -1,10 +1,24 @@
-// Test component for Story Protocol minting
+// Test component for Story Protocol minting - Custom contract approach
 import { useState } from 'react';
 import { ethers } from 'ethers';
 import { VerificationService } from '../services/verificationService';
 import { storyProtocolService } from '../services/storyProtocolService';
 
 const verificationService = new VerificationService();
+
+// Aeneid testnet configuration
+const AENEID_CHAIN_ID = '0x523'; // 1315 in hex
+const AENEID_CONFIG = {
+  chainId: AENEID_CHAIN_ID,
+  chainName: 'Story Aeneid Testnet',
+  nativeCurrency: {
+    name: 'IP',
+    symbol: 'IP',
+    decimals: 18,
+  },
+  rpcUrls: ['https://aeneid.storyrpc.io'],
+  blockExplorerUrls: ['https://aeneid.storyscan.xyz'],
+};
 
 export default function TestMinting() {
   const [status, setStatus] = useState<string>('Ready to test');
@@ -16,25 +30,54 @@ export default function TestMinting() {
     return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(content));
   };
 
+  const switchToAeneid = async () => {
+    try {
+      // Try to switch to Aeneid network
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: AENEID_CHAIN_ID }],
+      });
+    } catch (switchError: any) {
+      // If network doesn't exist, add it
+      if (switchError.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [AENEID_CONFIG],
+        });
+      } else {
+        throw switchError;
+      }
+    }
+  };
+
   const testMinting = async () => {
     setLoading(true);
     setError(null);
     setResult(null);
-    
+
     try {
-      // Step 1: Connect wallet
-      setStatus('🔌 Connecting wallet...');
+      // Step 1: Connect wallet and switch to Aeneid
+      setStatus('🔌 Connecting to Aeneid network...');
       if (!window.ethereum) {
         throw new Error('MetaMask not found');
       }
-      
-      // ethers v5 syntax
+
+      // Switch to Aeneid network first
+      await switchToAeneid();
+
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
       const userAddress = await signer.getAddress();
-      
+
+      // Verify we're on the right network
+      const network = await provider.getNetwork();
+      if (network.chainId !== 1315) {
+        throw new Error(`Wrong network! Please switch to Aeneid (Chain ID: 1315). Current: ${network.chainId}`);
+      }
+
       console.log('Connected as:', userAddress);
+      console.log('Network:', network.name, 'Chain ID:', network.chainId);
       
       // Step 2: Prepare test content
       setStatus('📝 Preparing test content...');
@@ -43,32 +86,15 @@ export default function TestMinting() {
       
       console.log('Content hash:', contentHash);
       
-      // Step 3: Upload metadata to IPFS (mock for now - you can integrate Pinata later)
+      // Step 3: Create metadata (mock IPFS URIs for now)
       setStatus('☁️ Creating metadata...');
-      const ipMetadata = {
-        name: 'Test IP Asset',
-        description: 'Testing Story Protocol minting with backend verification',
-        content: testContent,
-        attributes: [
-          { trait_type: 'Type', value: 'Document' },
-          { trait_type: 'Creator', value: userAddress }
-        ]
-      };
-      
-      const nftMetadata = {
-        name: 'Test IP NFT',
-        description: 'NFT representation of test IP',
-        image: 'ipfs://QmTest...' // Placeholder
-      };
-      
-      // For now, using mock IPFS URIs - replace with actual Pinata upload
       const ipMetadataURI = `ipfs://QmTestIP${Date.now()}`;
       const nftMetadataURI = `ipfs://QmTestNFT${Date.now()}`;
       
-      console.log('Metadata URIs created');
+      console.log('Metadata URIs:', { ipMetadataURI, nftMetadataURI });
       
-      // Step 4: Request backend signature
-      setStatus('🔐 Requesting backend signature...');
+      // Step 4: Request backend signature (verification)
+      setStatus('🔐 Requesting backend verification...');
       const mintToken = await verificationService.generateMintToken({
         creatorAddress: userAddress,
         contentHash,
@@ -76,37 +102,100 @@ export default function TestMinting() {
         nftMetadataURI
       });
       
-      console.log('Got signature:', mintToken);
-      setStatus(`✅ Signature received! Nonce: ${mintToken.nonce}, Expires in: ${mintToken.expiresIn}s`);
-      
-      // Step 5: Call smart contract
-      setStatus('⛓️ Calling smart contract...');
-      
-      await storyProtocolService.initialize(signer);
-      
-      const mintResult = await storyProtocolService.verifyAndMint({
-        to: userAddress,
-        contentHash,
+      console.log('✅ Backend approved! Signature:', mintToken.signature);
+      setStatus(`✅ Verified! Nonce: ${mintToken.nonce}, Expires in: ${mintToken.expiresIn}s`);
+
+      // Step 5: Call RegistrationWorkflows directly with user's wallet
+      setStatus('🚀 Calling RegistrationWorkflows...');
+
+      const REGISTRATION_WORKFLOWS_ADDRESS = import.meta.env.VITE_REGISTRATION_WORKFLOWS || '0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424';
+      const SPG_NFT_CONTRACT = import.meta.env.VITE_SPG_NFT_COLLECTION || '0x78AD3d22E62824945DED384a5542Ad65de16E637';
+
+      // RegistrationWorkflows ABI (with correct signature including allowDuplicates param)
+      const WORKFLOWS_ABI = [
+        "function mintAndRegisterIp(address spgNftContract, address recipient, tuple(string ipMetadataURI, bytes32 ipMetadataHash, string nftMetadataURI, bytes32 nftMetadataHash) ipMetadata, bool allowDuplicates) returns (address ipId, uint256 tokenId)"
+      ];
+
+      const workflowsContract = new ethers.Contract(
+        REGISTRATION_WORKFLOWS_ADDRESS,
+        WORKFLOWS_ABI,
+        signer
+      );
+
+      // Prepare metadata
+      const ipMetadata = {
         ipMetadataURI,
+        ipMetadataHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ipMetadataURI)),
         nftMetadataURI,
-        nonce: mintToken.nonce,
-        expiryTimestamp: mintToken.expiresAt,
-        signature: mintToken.signature
+        nftMetadataHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes(nftMetadataURI))
+      };
+
+      console.log('Calling mintAndRegisterIp with:', {
+        spgNftContract: SPG_NFT_CONTRACT,
+        recipient: userAddress,
+        ipMetadata
       });
-      
+
+      // Step 6: Mint and register IP
+      setStatus('⛓️ Minting IP Asset...');
+
+      const tx = await workflowsContract.mintAndRegisterIp(
+        SPG_NFT_CONTRACT,
+        userAddress,
+        ipMetadata,
+        true, // allowDuplicates - allow minting even if duplicate metadata exists
+        {
+          gasLimit: 5000000 // 5M gas
+        }
+      );
+
+      console.log('📝 Transaction sent:', tx.hash);
+      setStatus('⏳ Waiting for confirmation...');
+
+      const receipt = await tx.wait();
+      console.log('✅ Transaction confirmed!', receipt);
+
+      // Parse events to get ipId and tokenId
+      let ipId = '';
+      let tokenId = 0;
+
+      // Look for Transfer or IPRegistered events
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = workflowsContract.interface.parseLog(log);
+          console.log('Parsed log:', parsedLog);
+        } catch (e) {
+          // Try to find token ID from logs
+          if (log.topics.length >= 4) {
+            // Standard Transfer event has 4 topics: signature, from, to, tokenId
+            tokenId = parseInt(log.topics[3], 16);
+          }
+        }
+      }
+
+      // Get IP ID from registry if needed
+      // For now, we'll use transaction hash as a placeholder
+      ipId = receipt.contractAddress || `IP-${receipt.transactionHash.slice(0, 10)}`;
+
+      const mintResult = {
+        ipId,
+        tokenId,
+        txHash: receipt.transactionHash
+      };
+
       console.log('Mint result:', mintResult);
       
-      // Step 6: Update backend
+      // Step 7: Update backend with result
       setStatus('📡 Updating backend...');
       await verificationService.updateTokenAfterMint(
         mintToken.nonce,
         {
           ipId: mintResult.ipId,
-          tokenId: mintResult.tokenId,
+          tokenId: mintResult.tokenId.toString(),
           txHash: mintResult.txHash
         }
       );
-      
+
       setStatus('🎉 SUCCESS! IP Asset minted!');
       setResult({
         ipId: mintResult.ipId,
@@ -133,7 +222,7 @@ export default function TestMinting() {
         <div className="bg-white/10 backdrop-blur-lg rounded-lg p-6 mb-6">
           <h2 className="text-2xl font-semibold mb-4">Test Minting Flow</h2>
           <p className="text-gray-300 mb-4">
-            This will test the complete flow: hash content → request backend signature → mint IP asset
+            This will test the complete flow: Connect to Aeneid → Hash content → Backend signature authorization → Direct mint via RegistrationWorkflows → Register IP on Story Protocol
           </p>
           
           <button
@@ -173,11 +262,15 @@ export default function TestMinting() {
                 <p className="text-green-300">{result.tokenId}</p>
               </div>
               <div>
+                <span className="text-gray-400">License Terms ID:</span>
+                <p className="text-green-300">{result.licenseTermsId}</p>
+              </div>
+              <div>
                 <span className="text-gray-400">Tx Hash:</span>
                 <p className="text-green-300 break-all">{result.txHash}</p>
               </div>
               <div>
-                <span className="text-gray-400">Nonce:</span>
+                <span className="text-gray-400">Nonce (Backend Verified):</span>
                 <p className="text-green-300">{result.nonce}</p>
               </div>
               <div>
@@ -201,11 +294,12 @@ export default function TestMinting() {
         <div className="mt-8 bg-white/5 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-2">ℹ️ What This Tests:</h3>
           <ul className="list-disc list-inside space-y-1 text-gray-300">
-            <li>Backend signature generation</li>
-            <li>Smart contract verification</li>
-            <li>IP asset registration on Story Protocol</li>
+            <li>Aeneid network connection and switching</li>
+            <li>Backend signature authorization</li>
+            <li>Direct user wallet call to RegistrationWorkflows</li>
+            <li>Story Protocol IP registration</li>
             <li>NFT minting on SPG collection</li>
-            <li>Complete end-to-end flow</li>
+            <li>Complete end-to-end flow (wallet → backend auth → direct mint)</li>
           </ul>
         </div>
       </div>

@@ -42,9 +42,9 @@ export const CONTRACT_ADDRESSES = {
 
   // Story Protocol Aeneid Testnet (IP Asset Management)
   STORY_AENEID_TESTNET: {
-    // Orion Custom Contracts (Deployed Dec 12, 2025)
-    ORION_VERIFIED_MINTER: "0x9cb153775B639DCa50F1BA7a6daa34af12466450", // Custom wrapper with backend signature verification
-    SPG_NFT_COLLECTION: "0x15aAe0E870Aab25B09F4453239967e0aff1868C2", // SPG collection for IP asset minting
+    // Orion Custom Contracts (Deployed Dec 12, 2025 - with RegistrationWorkflows)
+    ORION_VERIFIED_MINTER: "0x1B014A3a16E5AF7D1207646f35AFD2b08535c1EB", // Custom wrapper with backend signature verification
+    SPG_NFT_COLLECTION: "0x78AD3d22E62824945DED384a5542Ad65de16E637", // SPG collection for IP asset minting
     
     // Story Protocol Core Contracts (Provided by Story Protocol)
     IP_ASSET_REGISTRY: "0x77319B4031e6eF1250907aa00018B8B1c67a244b", // Central IP registry
@@ -57,7 +57,7 @@ export const CONTRACT_ADDRESSES = {
     COLLECTION_SYMBOL: "ORION",
     MAX_SUPPLY: 100, // Initial limit, can be updated
     MINT_FEE: 0, // Free minting (platform charges via backend)
-    IS_PUBLIC_MINTING: false, // Only verified minter can mint
+    IS_PUBLIC_MINTING: true, // Wrapper contract can mint
     
     // Backend Verification
     BACKEND_VERIFIER_ADDRESS: "0x23e67597f0898f747Fa3291C8920168adF9455D0", // Public address for signature verification

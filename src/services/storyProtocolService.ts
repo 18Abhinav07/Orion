@@ -1,9 +1,11 @@
 // src/services/storyProtocolService.ts
 
 import { ethers } from 'ethers';
-// We'll need to define CONTRACT_ADDRESSES or get the address from a config
-// For now, hardcode the address from the plan
-const ORION_VERIFIED_MINTER_ADDRESS = '0x9cb153775B639DCa50F1BA7a6daa34af12466450';
+
+// Get contract address from environment variable (set in .env)
+const ORION_VERIFIED_MINTER_ADDRESS = 
+  import.meta.env.VITE_ORION_VERIFIED_MINTER || 
+  '0x1B014A3a16E5AF7D1207646f35AFD2b08535c1EB'; // Fallback to latest deployment (Dec 12, 2025)
 
 // OrionVerifiedMinter ABI (just the functions we need)
 const ORION_VERIFIED_MINTER_ABI = [
@@ -117,21 +119,21 @@ export class StoryProtocolService {
    * Check if a nonce has been used (anti-replay protection) 🛡️
    */
   async isNonceUsed(nonce: number): Promise<boolean> {
-    if (!this.provider || !this.contractInstance) {
+    if (!this.contractInstance) {
       throw new Error('Service not initialized');
     }
-    
+
     return await this.contractInstance.usedNonces(nonce);
   }
-  
+
   /**
    * Get the backend verifier address (for verification) ✅
    */
   async getBackendVerifier(): Promise<string> {
-    if (!this.provider || !this.contractInstance) {
+    if (!this.contractInstance) {
       throw new Error('Service not initialized');
     }
-    
+
     return await this.contractInstance.backendVerifier();
   }
 }
