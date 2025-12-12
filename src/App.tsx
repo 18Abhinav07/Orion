@@ -26,6 +26,7 @@ import OrderBookPage from "./pages/orderbook/OrderBookPage";
 import TradingPage from "./pages/trading/TradingPage";
 import TestMinting from "./pages/TestMinting";
 import LicenseAttachment from "./pages/LicenseAttachment";
+import RoyaltyDashboard from "./pages/dashboard/RoyaltyDashboard";
 import "./styles/HeroBackground.css";
 
 const App = () => {
@@ -82,6 +83,12 @@ const App = () => {
                 path="/dashboard" 
                 element={
                     <Dashboard />
+                } 
+              />
+               <Route 
+                path="/royalty-dashboard" 
+                element={
+                    <RoyaltyDashboard />
                 } 
               />
               <Route 

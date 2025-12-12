@@ -164,7 +164,7 @@ export class VerificationService {
    * Hash your content like a boss 💪
    */
   hashContent(content: string): string {
-    return ethers.keccak256(ethers.toUtf8Bytes(content));
+    return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(content));
   }
   
   /**
