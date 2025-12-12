@@ -7,7 +7,6 @@
 import { StoryClient, StoryConfig } from '@story-protocol/core-sdk';
 import { Address, http, createPublicClient, createWalletClient, custom } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { odyssey } from '@story-protocol/core-sdk/chains';
 import { STORY_CONFIG, STORY_CONTRACTS, DEFAULT_LICENSE_TERMS } from '../lib/storyProtocolConfig';
 
 // ============================================
