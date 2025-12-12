@@ -110,6 +110,10 @@ const Marketplace: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const handlenavigate = () => {
+    navigate('/dashboard');
+  }
+
   // ========================================
   // FETCH LICENSED IPS FROM BACKEND API
   // ========================================
@@ -187,7 +191,7 @@ const Marketplace: React.FC = () => {
   // ========================================
 
   const renderFilters = () => (
-    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <div className="bg-white/60 rounded-lg shadow-sm p-6 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-5 h-5 text-gray-600" />
         <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
@@ -397,13 +401,24 @@ const Marketplace: React.FC = () => {
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
+          
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Licensed IP Marketplace
           </h1>
           <p className="text-lg text-gray-600">
             Discover and license intellectual property assets on Story Protocol
           </p>
-        </div>
+          
+          
+         
+       </div>
+      <div className="absolute top-9 right-4 z-20">
+        <Button className='bg-black' onClick={handlenavigate}>
+          Go to Dashboard
+        </Button>
+      </div>
+
+       
 
         {/* Filters */}
         {renderFilters()}
