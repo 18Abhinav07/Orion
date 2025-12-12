@@ -6,6 +6,7 @@ import { storyProtocolService, MintResult } from '../services/storyProtocolServi
 import { getLicenseTermsId, attachLicenseTermsToIp } from '../services/licenseService';
 import { SimilarityWarningModal } from '../components/SimilarityWarningModal';
 import { SimilarityBlockedModal } from '../components/SimilarityBlockedModal';
+import { uploadJSONToIPFS } from '../services/pinataService';
 
 // Aeneid testnet configuration - using environment variables
 const CHAIN_ID_DECIMAL = Number(import.meta.env.VITE_STORY_CHAIN_ID) || 1315;
@@ -149,10 +150,15 @@ export default function TestMinting() {
         ]
       };
       
-      // Upload to IPFS via backend (or directly to Pinata)
-      // For now, using mock URIs - TODO: Implement real IPFS upload
-      const calculatedIpMetadataURI = `ipfs://QmTestIP${Date.now()}`;
-      const calculatedNftMetadataURI = `ipfs://QmTestNFT${Date.now()}`;
+      // Upload metadata to IPFS via Pinata
+      console.log('📤 Uploading IP metadata to Pinata...');
+      const calculatedIpMetadataURI = await uploadJSONToIPFS(ipMetadata, `ip-metadata-${calculatedContentHash}`);
+      
+      console.log('📤 Uploading NFT metadata to Pinata...');
+      const calculatedNftMetadataURI = await uploadJSONToIPFS(nftMetadata, `nft-metadata-${calculatedContentHash}`);
+      
+      console.log(`✅ IP Metadata URI: ${calculatedIpMetadataURI}`);
+      console.log(`✅ NFT Metadata URI: ${calculatedNftMetadataURI}`);
       
       // Store in state for later use
       setIpMetadataURI(calculatedIpMetadataURI);
