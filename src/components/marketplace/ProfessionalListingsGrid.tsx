@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Coins } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { MarketplaceListing } from '../../utils/marketplaceCache';
@@ -8,15 +8,16 @@ import { formatPriceInUSD } from '../../utils/priceService';
 import { CachedImage } from '../CachedImage';
 
 // Professional Listings Grid
-export const ProfessionalListingsGrid: React.FC<{ 
+export const ProfessionalListingsGrid: React.FC<{
     listings: MarketplaceListing[];
     category: string;
     onSelectListing: (listing: MarketplaceListing) => void;
     onNavigateToTrading: (listing: MarketplaceListing) => void;
+    onPayRoyalty?: (listing: MarketplaceListing) => void;
     tokenPrice: number;
     loading?: boolean;
     userLicenses?: any[]; // new prop
-  }> = ({ listings, category, onSelectListing, onNavigateToTrading, tokenPrice, loading = false, userLicenses = [] }) => {
+  }> = ({ listings, category, onSelectListing, onNavigateToTrading, onPayRoyalty, tokenPrice, loading = false, userLicenses = [] }) => {
     const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   
     // Show loading state
@@ -115,15 +116,25 @@ export const ProfessionalListingsGrid: React.FC<{
             {/* Action Buttons */}
             <div className="px-6 pb-6 pt-2 border-t border-gray-100">
               <div className="flex space-x-3">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="flex-1 bg-gray-800 hover:bg-gray-900"
                   onClick={() => onSelectListing(listing)}
                 >
                   <DollarSign className="w-4 h-4 mr-2" />
                   Buy
                 </Button>
-               
+                {onPayRoyalty && listing.license && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 border-green-600 text-green-600 hover:bg-green-50"
+                    onClick={() => onPayRoyalty(listing)}
+                  >
+                    <Coins className="w-4 h-4 mr-2" />
+                    Pay Royalty
+                  </Button>
+                )}
               </div>
             </div>
           </motion.div>

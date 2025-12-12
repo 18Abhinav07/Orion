@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, DollarSign, Info, Users, TrendingUp, Clock } from 'lucide-react';
+import { X, DollarSign, Info, Users, TrendingUp, Clock, Coins } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { MarketplaceListing } from '../../utils/marketplaceCache';
@@ -24,9 +24,11 @@ export const ProfessionalExpandedDetail: React.FC<{
     listing: MarketplaceListing;
     onClose: () => void;
     onBuy: (listing: MarketplaceListing) => void;
-      onNavigateToTrading: (listing: MarketplaceListing) => void;
-      tokenPrice: number;
-      onMintLicense: (listing: MarketplaceListing) => void;  }> = ({ listing, onClose, onBuy, onNavigateToTrading, tokenPrice, onMintLicense }) => {
+    onNavigateToTrading: (listing: MarketplaceListing) => void;
+    tokenPrice: number;
+    onMintLicense: (listing: MarketplaceListing) => void;
+    onPayRoyalty?: (listing: MarketplaceListing) => void;
+  }> = ({ listing, onClose, onBuy, onNavigateToTrading, tokenPrice, onMintLicense, onPayRoyalty }) => {
     useEffect(() => {
       const handleEsc = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
@@ -163,11 +165,21 @@ export const ProfessionalExpandedDetail: React.FC<{
             {/* Footer */}
             <footer className="p-6 bg-gray-50 border-t border-gray-200">
               <div className="flex justify-end space-x-4">
-               
-                
+                {listing.license && onPayRoyalty && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-green-600 text-green-600 hover:bg-green-50"
+                    onClick={() => onPayRoyalty(listing)}
+                  >
+                    <Coins className="w-5 h-5 mr-2" />
+                    Pay Royalty
+                  </Button>
+                )}
+
                 {listing.license && (
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => onMintLicense(listing)}
                   >

@@ -68,7 +68,7 @@ import {
   Shield
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Separator } from '../../components/ui/separator';
@@ -80,6 +80,9 @@ import ComplianceGuard from '../../components/ComplianceGuard';
 import ComplianceCheck from '../../components/ComplianceCheck';
 import RoyaltyDashboard from './RoyaltyDashboard';
 import { fetchTokenPrice, formatPriceInUSD } from '../../utils/priceService';
+
+// Backend API URL
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api';
 
 // Invoice Financing Components
 import TokenStatusCard from '../../components/invoice-financing/investor/TokenStatusCard';
@@ -187,7 +190,6 @@ const SIDEBAR_ITEMS = [
   { id: 'my-ips', label: 'My Registered IPs', icon: BookCopy },
   { id: 'my-licenses', label: 'My Owned Licenses', icon: Shield },
   { id: 'royalties', label: 'Royalty Dashboard', icon: DollarSign },
-  { id: 'transactions', label: 'Transactions', icon: Activity },
   { id: 'profile', label: 'Profile', icon: User },
 ];
 
@@ -409,6 +411,13 @@ const Dashboard: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isConnected, provider, address]);
+
+  // Fetch user licenses when section is active
+  useEffect(() => {
+    if (activeSection === 'my-licenses' && address) {
+      fetchUserLicenses();
+    }
+  }, [activeSection, address]);
 
   // Connect wallet function
   const connectWallet = async () => {
@@ -1775,6 +1784,55 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Fetch user's owned license tokens from backend
+  const fetchUserLicenses = async () => {
+    if (!address) return;
+
+    try {
+      console.log(`📜 Fetching license tokens for user: ${address}`);
+
+      const response = await fetch(`${BACKEND_API_URL}/license-tokens/user/${address}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const licenses = result.data.licenses || [];
+        console.log(`✅ Fetched ${licenses.length} license tokens`);
+
+        // Transform backend data to match frontend LicenseToken interface
+        const formattedLicenses: LicenseToken[] = licenses.map((license: any) => ({
+          licenseTokenId: license.licenseTokenId || license.tokenId || license._id,
+          parentIpId: license.ipId,
+          parentIpName: license.ipName || `IP ${license.ipId?.slice(0, 10)}...`,
+          mintedAt: license.timestamp ? new Date(license.timestamp * 1000).toISOString() : license.createdAt,
+        }));
+
+        setOwnedLicenses(formattedLicenses);
+
+        // Update portfolio data
+        setIpPortfolioData(prev => ({
+          ...prev,
+          totalLicenses: formattedLicenses.length,
+        }));
+
+        if (formattedLicenses.length > 0) {
+          toast.success(`Loaded ${formattedLicenses.length} license token${formattedLicenses.length > 1 ? 's' : ''}`);
+        }
+      } else {
+        console.log('ℹ️ No license tokens found');
+        setOwnedLicenses([]);
+      }
+    } catch (error: any) {
+      console.error('❌ Error fetching license tokens:', error);
+      toast.error(`Failed to fetch license tokens: ${error.message}`);
+      setOwnedLicenses([]);
+    }
+  };
+
   // Manual testing function to help debug transaction issues
   const testContractsAndEvents = async () => {
     if (!isConnected || !provider || !address) {
@@ -2997,6 +3055,112 @@ const Dashboard: React.FC = () => {
           </div>
         );
 
+      case 'my-licenses':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">My Owned Licenses</h1>
+                <p className="text-gray-600 mt-1">License tokens you've minted from IPs</p>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1">
+                  {ownedLicenses.length} Total
+                </Badge>
+                <Button
+                  onClick={fetchUserLicenses}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {ownedLicenses.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {ownedLicenses.map((license) => (
+                  <Card key={license.licenseTokenId} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-blue-600" />
+                        License #{license.licenseTokenId.slice(-8)}
+                      </CardTitle>
+                      <CardDescription className="truncate" title={license.parentIpId}>
+                        Parent IP: {license.parentIpId.slice(0, 10)}...{license.parentIpId.slice(-8)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">IP Name:</span>
+                          <span className="font-medium text-right">{license.parentIpName}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Minted:</span>
+                          <span className="font-medium">
+                            {new Date(license.mintedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">License Token ID:</span>
+                          <span className="font-mono text-xs">{license.licenseTokenId.slice(0, 10)}...</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => navigate(`/dashboard/pay-royalties`)}
+                        >
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          Pay Royalty
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => window.open(`https://explorer.story.foundation/ipa/${license.parentIpId}`, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View IP
+                        </Button>
+                      </div>
+
+                      <div className="pt-3 border-t">
+                        <p className="text-xs text-gray-500">
+                          This license allows you to use the parent IP according to its license terms.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="border border-dashed border-gray-300">
+                <CardContent className="text-center py-12">
+                  <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No License Tokens Yet</h3>
+                  <p className="text-gray-600 mb-4">
+                    You haven't minted any license tokens. Visit the marketplace to mint licenses from IPs you want to use.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/marketplace')}
+                    variant="default"
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Browse Marketplace
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        );
+
       case 'transactions':
         return (
           <div className="space-y-6">
@@ -3863,6 +4027,9 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         );
+
+      case 'royalties':
+        return <RoyaltyDashboard />;
 
       default:
         return (
