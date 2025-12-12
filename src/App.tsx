@@ -64,9 +64,7 @@ const App = () => {
               <Route 
                 path="/issuer" 
                 element={
-                  <ProtectedRoute allowedRoles={['issuer']}>
                     <NewIssuerDashboard />
-                  </ProtectedRoute>
                 } 
               />
               <Route 
