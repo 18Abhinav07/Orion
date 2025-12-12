@@ -185,16 +185,20 @@ export default function TestMinting() {
 
       console.log('Mint result:', mintResult);
       
-      // Step 7: Update backend with result
+      // Step 7: Update backend with result (optional - don't fail if this fails)
       setStatus('📡 Updating backend...');
-      await verificationService.updateTokenAfterMint(
-        mintToken.nonce,
-        {
+      try {
+        await verificationService.updateTokenAfterMint({
+          nonce: mintToken.nonce,
           ipId: mintResult.ipId,
-          tokenId: mintResult.tokenId.toString(),
+          tokenId: mintResult.tokenId,
           txHash: mintResult.txHash
-        }
-      );
+        });
+        console.log('✅ Backend updated successfully');
+      } catch (backendError: any) {
+        console.warn('⚠️ Backend update failed (non-critical):', backendError.message);
+        // Don't throw - minting already succeeded
+      }
 
       setStatus('🎉 SUCCESS! IP Asset minted!');
       setResult({
