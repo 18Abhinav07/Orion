@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, Coins } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { MarketplaceListing } from '../../utils/marketplaceCache';
@@ -115,27 +115,14 @@ export const ProfessionalListingsGrid: React.FC<{
             
             {/* Action Buttons */}
             <div className="px-6 pb-6 pt-2 border-t border-gray-100">
-              <div className="flex space-x-3">
-                <Button
-                  size="sm"
-                  className="flex-1 bg-gray-800 hover:bg-gray-900"
-                  onClick={() => onSelectListing(listing)}
-                >
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Buy
-                </Button>
-                {onPayRoyalty && listing.license && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 border-green-600 text-green-600 hover:bg-green-50"
-                    onClick={() => onPayRoyalty(listing)}
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    Pay Royalty
-                  </Button>
-                )}
-              </div>
+              <Button
+                size="sm"
+                className="w-full bg-gray-800 hover:bg-gray-900"
+                onClick={() => onSelectListing(listing)}
+              >
+                <DollarSign className="w-4 h-4 mr-2" />
+                View Details
+              </Button>
             </div>
           </motion.div>
         ))}

@@ -12,10 +12,8 @@ import { FeaturedPropertiesCarousel } from '../../components/marketplace/Feature
 import { ProfessionalListingsGrid } from '../../components/marketplace/ProfessionalListingsGrid';
 import { ProfessionalExpandedDetail } from '../../components/marketplace/ProfessionalExpandedDetail';
 import { LicenseMintingModal } from '../../components/marketplace/LicenseMintingModal';
-import { RoyaltyPaymentModal } from '../../components/marketplace/RoyaltyPaymentModal';
 import { marketplaceService } from '../../services/marketplaceService';
 import { licenseTokenService } from '../../services/licenseTokenService';
-import { royaltyService } from '../../services/royaltyService';
 import { ethers } from 'ethers';
 
 const NewMarketplace: React.FC = () => {
@@ -27,10 +25,8 @@ const NewMarketplace: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
   const [selectedListingForLicense, setSelectedListingForLicense] = useState<MarketplaceListing | null>(null);
-  const [selectedListingForRoyalty, setSelectedListingForRoyalty] = useState<MarketplaceListing | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showLicenseMintingModal, setShowLicenseMintingModal] = useState(false);
-  const [showRoyaltyPaymentModal, setShowRoyaltyPaymentModal] = useState(false);
   const [userLicenses, setUserLicenses] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('all');
 
@@ -205,71 +201,6 @@ const NewMarketplace: React.FC = () => {
     toast.info('Trading terminal is only available for tradable assets on /testmarketplace');
   };
 
-  const handlePayRoyalty = async (listing: MarketplaceListing, amount: string) => {
-    console.log('💰 handlePayRoyalty called with:', { listing, amount });
-
-    if (!signer || !address) {
-      toast.error('Please connect your wallet to pay royalties.');
-      return;
-    }
-
-    // Check if on correct network (Story Aeneid Testnet)
-    if (!isCorrectNetwork) {
-      toast.error('Please switch to Story Aeneid Testnet (Chain ID: 1315)');
-      const switched = await switchToRequiredNetwork();
-      if (!switched) {
-        toast.error('Failed to switch network. Please switch manually in MetaMask.');
-        return;
-      }
-      toast.success('Switched to Story Aeneid Testnet');
-    }
-
-    if (!listing.license) {
-      toast.error('This asset does not have license terms attached.');
-      return;
-    }
-
-    const ROYALTY_TOKEN_ADDRESS = '0x1514000000000000000000000000000000000000'; // WIP token on Aeneid testnet
-
-    try {
-      const amountInWei = ethers.utils.parseEther(amount).toString();
-
-      console.log('💰 Paying royalty:', {
-        from: address,
-        toIpId: listing.license.ipId,
-        amount: amount,
-        tokenAddress: ROYALTY_TOKEN_ADDRESS
-      });
-
-      toast.info('⚠️ Note: This is a test implementation. Proper royalty payments require a derivative IP.');
-
-      // Pay royalty to the parent IP
-      // NOTE: This is a simplified implementation for testing
-      // In production, payer should be a derivative IP
-      await royaltyService.payRoyaltyOnBehalf(
-        listing.license.ipId, // Payer IP ID (should be derivative IP in production)
-        listing.license.ipId, // Receiver IP ID (the parent IP receiving royalties)
-        ROYALTY_TOKEN_ADDRESS,
-        amountInWei,
-        signer
-      );
-
-      toast.success(`Successfully paid ${amount} WIP tokens as royalty!`);
-      setShowRoyaltyPaymentModal(false);
-
-    } catch (error: any) {
-      console.error('❌ Error paying royalty:', error);
-
-      if (error?.message?.includes('insufficient funds')) {
-        toast.error('Insufficient WIP tokens. Get testnet tokens from Story faucet.');
-      } else if (error?.message?.includes('user rejected')) {
-        toast.error('Transaction rejected by user.');
-      } else {
-        toast.error(`Failed to pay royalty: ${error?.message || 'Unknown error'}`);
-      }
-    }
-  };
-
   // Filter listings by category
   const filteredListings = listings.filter(listing => {
     if (activeTab === 'all') return true;
@@ -325,11 +256,11 @@ const NewMarketplace: React.FC = () => {
             <TabsTrigger value="derivatives">Derivatives Allowed</TabsTrigger>
           </TabsList>
           <div className="fixed top-11 right-9 z-50">
-            <button 
+            <button
               className="bg-black/50 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-              onClick={handlenavigate}
+              onClick={() => navigate('/my-assets')}
             >
-              Go to Dashboard
+              Pay Royalties
             </button>
           </div>
 
@@ -344,10 +275,6 @@ const NewMarketplace: React.FC = () => {
                 setShowDetailModal(true);
               }}
               onNavigateToTrading={navigateToTradingTerminal}
-              onPayRoyalty={(listing) => {
-                setSelectedListingForRoyalty(listing);
-                setShowRoyaltyPaymentModal(true);
-              }}
               tokenPrice={0}
               loading={loading}
               userLicenses={userLicenses}
@@ -373,10 +300,6 @@ const NewMarketplace: React.FC = () => {
             setSelectedListingForLicense(listing);
             setShowLicenseMintingModal(true);
           }}
-          onPayRoyalty={(listing) => {
-            setSelectedListingForRoyalty(listing);
-            setShowRoyaltyPaymentModal(true);
-          }}
         />
       )}
 
@@ -386,15 +309,6 @@ const NewMarketplace: React.FC = () => {
           tokenPrice={0}
           onClose={() => setShowLicenseMintingModal(false)}
           onMint={handleMintLicense}
-        />
-      )}
-
-      {showRoyaltyPaymentModal && selectedListingForRoyalty && (
-        <RoyaltyPaymentModal
-          listing={selectedListingForRoyalty}
-          onClose={() => setShowRoyaltyPaymentModal(false)}
-          onPayRoyalty={handlePayRoyalty}
-          userLicenses={userLicenses}
         />
       )}
     </div>

@@ -159,7 +159,7 @@ async function main() {
   );
   
   const collectionParams = {
-    name: "Orion IP-OPS Assets",
+    name: "Orion Orion Assets",
     symbol: "ORION",
     baseURI: "",
     contractURI: "", // Empty like in Story test examples

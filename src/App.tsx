@@ -30,6 +30,7 @@ import RoyaltyDashboard from "./pages/dashboard/RoyaltyDashboard";
 import PayRoyalties from "./pages/dashboard/PayRoyalties";
 import DirectRoyaltyPayment from "./pages/dashboard/DirectRoyaltyPayment";
 import CheckWIPBalance from "./pages/dashboard/CheckWIPBalance";
+import MyAssets from "./pages/dashboard/MyAssets";
 import "./styles/HeroBackground.css";
 
 const App = () => {
@@ -99,17 +100,23 @@ const App = () => {
                     <DirectRoyaltyPayment />
                 } 
               />
-              <Route 
-                path="/check-wip-balance" 
+              <Route
+                path="/check-wip-balance"
                 element={
                     <CheckWIPBalance />
-                } 
+                }
               />
-              <Route 
-                path="/marketplace" 
+              <Route
+                path="/my-assets"
+                element={
+                    <MyAssets />
+                }
+              />
+              <Route
+                path="/marketplace"
                 element={
                     <NewMarketplace />
-                } 
+                }
               />
               
               <Route 

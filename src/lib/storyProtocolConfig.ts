@@ -51,7 +51,7 @@ export const STORY_CONTRACTS = STORY_CONFIG.contracts;
  * These values are used when creating the platform's NFT collection
  */
 export const SPG_COLLECTION_CONFIG = {
-  name: 'IP-OPS Creative Assets',
+  name: 'Orion Creative Assets',
   symbol: 'IPOPS',
   isPublicMinting: true, // Allow all verified issuers to mint
   mintOpen: true,

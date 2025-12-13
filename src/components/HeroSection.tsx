@@ -12,6 +12,10 @@ const HeroSection = () => {
     navigate('/issuer');
   };
 
+  const handleMarketplaceNavigate = () => {
+    navigate('/marketplace');
+  };
+
   useEffect(() => {
     // Trigger hero animations on mount
     const elements = heroRef.current?.querySelectorAll('[data-animate]');
@@ -80,7 +84,7 @@ const HeroSection = () => {
           </h1>
 
           <p className="font-inter text-base md:text-lg text-foreground/80 mb-12 max-w-xl mx-auto opacity-0 animate-fade-in-up relative" style={{ animationDelay: '0.8s', zIndex: 2 }}>
-            IP-OPS is the ultimate platform for creators to establish on-chain provenance, manage derivatives, and automate royalties for their digital and real-world intellectual property.
+            Orion is the ultimate platform for creators to establish on-chain provenance, manage derivatives, and automate royalties for their digital and real-world intellectual property.
           </p>
 
           {/* CTA Buttons with spring animation */}
@@ -110,6 +114,7 @@ const HeroSection = () => {
                     background: 'linear-gradient(127deg, rgb(14, 28, 41) -68%, rgb(50, 61, 104) 100%)',
                     boxShadow: 'rgb(184, 193, 230) 0px 1px 2px 0px inset, rgba(46, 64, 128, 0.35) 0px 0.706592px 0.706592px -0.583333px, rgba(46, 64, 128, 0.34) 0px 1.80656px 1.80656px -1.16667px, rgba(46, 64, 128, 0.33) 0px 3.62176px 3.62176px -1.75px, rgba(46, 64, 128, 0.3) 0px 6.8656px 6.8656px -2.33333px, rgba(46, 64, 128, 0.26) 0px 13.6468px 13.6468px -2.91667px, rgba(46, 64, 128, 0.15) 0px 30px 30px -3.5px'
                   }}
+                  onClick={handleMarketplaceNavigate}
                 >
                   Explore Marketplace
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 256 256">

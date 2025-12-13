@@ -53,7 +53,7 @@ export const CONTRACT_ADDRESSES = {
     REGISTRATION_WORKFLOWS: "0xbe39E1C756e921BD25DF86e7AAa31106d1eb0424", // SPG creation and registration
     
     // Collection Configuration
-    COLLECTION_NAME: "Orion IP-OPS Assets",
+    COLLECTION_NAME: "Orion Orion Assets",
     COLLECTION_SYMBOL: "ORION",
     MAX_SUPPLY: 100, // Initial limit, can be updated
     MINT_FEE: 0, // Free minting (platform charges via backend)

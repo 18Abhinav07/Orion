@@ -27,19 +27,19 @@ const ReviewsSection = () => {
     {
       name: "Alex 'BeatMaster' Reed",
       role: "Independent Musician",
-      content: "IP-OPS with Story Protocol has been a game-changer for my music. Registering my tracks on-chain and seeing royalties flow directly has brought a level of transparency and control I never thought possible. No more opaque record deals!",
+      content: "Orion with Story Protocol has been a game-changer for my music. Registering my tracks on-chain and seeing royalties flow directly has brought a level of transparency and control I never thought possible. No more opaque record deals!",
       rating: 5
     },
     {
       name: "Maya 'PixelDreams' Singh",
       role: "Digital Artist & NFT Creator",
-      content: "As a digital artist, protecting my work is crucial. IP-OPS's derivative tracking is incredible; it ensures that even remixes and adaptations of my art give proper attribution and royalties. It’s truly empowering!",
+      content: "As a digital artist, protecting my work is crucial. Orion's derivative tracking is incredible; it ensures that even remixes and adaptations of my art give proper attribution and royalties. It’s truly empowering!",
       rating: 5
     },
     {
       name: "Dr. Ben Carter",
       role: "Academic Author & Researcher",
-      content: "The on-chain provenance provided by IP-OPS is invaluable for academic integrity. Registering my research papers secures my authorship and allows for clear licensing terms for collaborations and further studies. A revolutionary tool for creators.",
+      content: "The on-chain provenance provided by Orion is invaluable for academic integrity. Registering my research papers secures my authorship and allows for clear licensing terms for collaborations and further studies. A revolutionary tool for creators.",
       rating: 5
     }
   ];
@@ -58,7 +58,7 @@ const ReviewsSection = () => {
       <div className="max-w-[1200px] mx-auto px-6 relative z-10">
         <div className="text-center mb-16 opacity-0" data-scroll-reveal>
           <h2 className="font-jakarta text-5xl md:text-[56px] font-italic text-foreground mb-4">
-            Creators Trust IP-OPS.
+            Creators Trust Orion.
           </h2>
           <p className="font-inter text-lg text-foreground/80 max-w-2xl mx-auto">
             Hear from artists, musicians, and innovators benefiting from transparent IP management.
