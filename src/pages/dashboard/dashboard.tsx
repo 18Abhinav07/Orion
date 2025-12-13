@@ -290,7 +290,7 @@ const Dashboard: React.FC = () => {
   // Combined user data - prioritize profileData from API, fallback to auth context user
   const currentUser = profileData || user;
   
-  // IP-OPS states
+  // Orion states
   const [registeredIPAssets, setRegisteredIPAssets] = useState<IPAsset[]>([]);
   const [loadingRegisteredAssets, setLoadingRegisteredAssets] = useState(false);
   const [ownedLicenses, setOwnedLicenses] = useState<LicenseToken[]>([]);

@@ -69,7 +69,7 @@ const AutoRepayingSection = () => {
             Automatic Royalty & Derivative Management
           </h2>
           <p className="font-inter text-base md:text-lg text-foreground/80 max-w-2xl mx-auto">
-            IP-OPS streamlines your IP monetization, ensuring creators are fairly compensated and derivatives are tracked seamlessly.
+            Orion streamlines your IP monetization, ensuring creators are fairly compensated and derivatives are tracked seamlessly.
           </p>
         </div>
 
