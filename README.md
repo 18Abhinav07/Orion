@@ -7,6 +7,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4.1-646CFF)](https://vitejs.dev/)
+[![Vite](https://img.shields.io/youtube/views/Z01S9XWOOAA)](https://youtu.be/Z01S9XWOOAA)
 
 ---
 
