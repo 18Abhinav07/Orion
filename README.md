@@ -1,4 +1,4 @@
-# 🎨 IP-OPS - Intellectual Property Operations Platform
+# 🎨 Orion - Intellectual Property Operations Platform
 
 > **Revolutionizing IP protection and monetization through Story Protocol blockchain technology**
 
@@ -28,7 +28,7 @@
 
 ## 🌟 Overview
 
-**IP-OPS** is a next-generation intellectual property management platform built on **Story Protocol**. It combines advanced content fingerprinting, automated derivative detection, and blockchain-based IP registration to create a transparent, efficient ecosystem for creators, licensees, and administrators.
+**Orion** is a next-generation intellectual property management platform built on **Story Protocol**. It combines advanced content fingerprinting, automated derivative detection, and blockchain-based IP registration to create a transparent, efficient ecosystem for creators, licensees, and administrators.
 
 ### Problem Statement
 
@@ -39,7 +39,7 @@
 
 ### Our Solution
 
-IP-OPS leverages Story Protocol's on-chain IP infrastructure to provide:
+Orion leverages Story Protocol's on-chain IP infrastructure to provide:
 
 ✅ **Automated Derivative Detection** - AI-powered similarity scoring (0-100%)
 ✅ **On-Chain IP Registration** - Immutable proof of ownership via Story Protocol
@@ -119,14 +119,14 @@ sequenceDiagram
 
 ### **3️⃣ License Marketplace**
 
-Unlike traditional platforms where users "buy ownership," IP-OPS uses **Story Protocol's License Tokens**:
+Unlike traditional platforms where users "buy ownership," Orion uses **Story Protocol's License Tokens**:
 
 **Traditional Model:**
 ```
 User pays $100 → Owns 10% of IP → Can resell fractions
 ```
 
-**IP-OPS Model:**
+**Orion Model:**
 ```
 User pays minting fee → Owns LICENSE to use IP → Cannot resell IP itself
 ```
@@ -353,7 +353,7 @@ graph TD
 ### **Smart Contracts** (Story Protocol Provided)
 ```typescript
 // Story Protocol Infrastructure (Sepolia)
-SPG_NFT_CONTRACT: "0x...",       // IP-OPS NFT collection
+SPG_NFT_CONTRACT: "0x...",       // Orion NFT collection
 IP_ASSET_REGISTRY: "0x...",      // Global IP registry
 LICENSE_REGISTRY: "0x...",       // License token registry
 ROYALTY_MODULE: "0x...",         // Automatic royalty distribution
@@ -1119,7 +1119,7 @@ This project is licensed under the **MIT License**.
 ```
 MIT License
 
-Copyright (c) 2025 IP-OPS Team
+Copyright (c) 2025 Orion Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1185,8 +1185,8 @@ SOFTWARE.
 
 ---
 
-**Built with 💜 by the IP-OPS Team | Powered by Story Protocol**
+**Built with 💜 by the Orion Team | Powered by Story Protocol**
 
-*© 2025 IP-OPS. Licensed under MIT License.*
+*© 2025 Orion. Licensed under MIT License.*
 
 </div>
