@@ -1,599 +1,1192 @@
-# orion (TOA) - Real World Asset Tokenization Platform
+# 🎨 IP-OPS - Intellectual Property Operations Platform
 
-> **Democratizing premium real-world asset investment through blockchain technology on the Flow EVM Network**
+> **Revolutionizing IP protection and monetization through Story Protocol blockchain technology**
 
-[![Flow Network](https://img.shields.io/badge/Built%20on-Flow%20EVM-blue)](https://flow.com/)
-[![ERC-3643](https://img.shields.io/badge/Standard-ERC--3643-green)](https://eips.ethereum.org/EIPS/eip-3643)
+[![Story Protocol](https://img.shields.io/badge/Built%20on-Story%20Protocol-purple)](https://story.foundation/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4.1-646CFF)](https://vitejs.dev/)
-[![Vite](https://img.shields.io/youtube/views/Z01S9XWOOAA)](https://youtu.be/Z01S9XWOOAA)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)](https://www.postgresql.org/)
+[![Demo](https://img.shields.io/youtube/views/Z01S9XWOOAA)](https://youtu.be/Z01S9XWOOAA)
 
 ---
 
-## Project Goals
+## 📖 Table of Contents
 
-orion addresses the **$280 trillion global real estate market** accessibility problem by creating a compliant, secure, and liquid platform for Real World Asset (RWA) tokenization on Flow EVM.
-
-### Key Objectives
-- **Democratize Premium Assets**: Enable fractional ownership of high-value real estate, commodities, and revenue streams
-- **Regulatory Compliance**: Implement ERC-3643 standard with comprehensive KYC/AML protocols
-- **Enhanced Liquidity**: Create secondary marketplace with peer-to-peer trading capabilities
-- **Sustainable Yield Management**: Innovative yield burning mechanism for asset appreciation
-- **Cross-Chain Ready**: Built for Flow EVM with multi-chain expansion potential
-
-```mermaid
-graph TB
-    A[Physical Assets] --> B[Blockchain Tokenization]
-    B --> C[Fractional Ownership]
-    C --> D[Secondary Trading]
-    D --> E[Yield Distribution]
-    E --> F[Yield Burning Mechanism]
-    F --> G[Portfolio Management]
-```
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Architecture](#-architecture)
+- [Technology Stack](#-technology-stack)
+- [Getting Started](#-getting-started)
+- [User Journeys](#-user-journeys)
+- [Similarity Detection](#-similarity-detection)
+- [Story Protocol Integration](#-story-protocol-integration)
+- [API Documentation](#-api-documentation)
+- [Development](#-development)
+- [License](#-license)
 
 ---
 
-## Revolutionary Features
+## 🌟 Overview
 
-### **🔥 Yield Burning Mechanism**
-- **Asset Appreciation**: Burn yield tokens to increase remaining token value
-- **Deflationary Economics**: Reduces token supply while maintaining asset backing
-- **Investor Choice**: Choose between yield distribution or token value appreciation
-- **Smart Contract Automation**: Transparent burning process with on-chain verification
+**IP-OPS** is a next-generation intellectual property management platform built on **Story Protocol**. It combines advanced content fingerprinting, automated derivative detection, and blockchain-based IP registration to create a transparent, efficient ecosystem for creators, licensees, and administrators.
 
-### **Compliance & Security**
-- **ERC-3643 Standard**: Regulatory-compliant token transfers with built-in KYC validation
-- **Multi-signature Security**: Enhanced security for high-value asset transactions
-- **SPV Integration**: Special Purpose Vehicle verification for legal asset backing
-- **Merkle Tree KYC**: Efficient batch verification system for user onboarding
+### Problem Statement
 
-### **Core Platform Features**
-- **Asset Tokenization Workflow**: Complete issuer-to-marketplace pipeline
-- **Primary Marketplace**: Direct asset investment with compliance checks
-- **Secondary P2P Trading**: Orderbook-based peer-to-peer asset trading
-- **Real-time Portfolio Dashboard**: Comprehensive investment tracking and analytics
-- **Automated Yield Distribution**: Smart contract-based revenue sharing
+- **IP Theft**: Creators struggle to prove ownership and detect unauthorized derivatives
+- **Manual Licensing**: Traditional licensing processes are slow and opaque
+- **Royalty Tracking**: No automated way to track and distribute derivative royalties
+- **Trust Issues**: Centralized platforms control IP rights without transparency
 
-### **Advanced Trading & Analytics**
-- **Interactive Trading Terminal**: Professional-grade interface with real-time charts
-- **Order Book Management**: Deep liquidity with escrow-secured transactions
-- **Price Discovery**: Dynamic pricing with Flow/USD conversion
-- **Performance Analytics**: Asset performance tracking and yield calculations
+### Our Solution
 
-### **User Experience**
-- **Responsive Design**: Mobile-first approach with modern UI/UX
-- **Real-time Notifications**: Live updates for trading and yield activities
-- **Intuitive Navigation**: Role-based dashboards (Investor/Issuer/Manager/Admin)
-- **Dark/Light Mode**: Customizable interface themes
+IP-OPS leverages Story Protocol's on-chain IP infrastructure to provide:
+
+✅ **Automated Derivative Detection** - AI-powered similarity scoring (0-100%)
+✅ **On-Chain IP Registration** - Immutable proof of ownership via Story Protocol
+✅ **License Marketplace** - Mint licenses instead of buying ownership fractions
+✅ **Automatic Royalties** - Parent IPs earn 10% when derivatives generate revenue
+✅ **Admin Dispute Resolution** - Fair arbitration for gray-area similarity (70-90%)
+✅ **Cache-First Architecture** - Fast queries with blockchain verification
 
 ---
 
-## Architecture Overview
+## 🚀 Key Features
 
-```mermaid
-flowchart TB
-    subgraph "Frontend Layer"
-        A[React/TypeScript App] --> B[Wallet Integration]
-        A --> C[Trading Interface]
-        A --> D[Portfolio Dashboard]
-        A --> E[Yield Management]
-    end
-    
-    subgraph "Smart Contract Layer"
-        F[ERC-3643 Tokens] --> G[Identity Registry]
-        H[Marketplace] --> I[Order Book Escrow]
-        J[Payment Splitter] --> K[Yield Burning Contract]
-        L[Admin Contract] --> M[Token Management]
-    end
-    
-    subgraph "Flow EVM Network"
-        N[Mainnet: Chain ID 747] --> O[RPC: mainnet.evm.nodes.onflow.org]
-        P[Block Explorer: evm-testnet.flowscan.io]
-    end
-    
-    subgraph "External Services"
-        Q[IPFS Metadata] --> R[Pinata Gateway]
-        S[JWT Authentication] --> T[KYC Verification]
-    end
-    
-    A --> F
-    F --> N
-    Q --> A
-    S --> A
-```
+### **1️⃣ Content Fingerprinting & Registration**
 
-### Enhanced Data Flow Architecture
-1. **Asset Submission** → Issuer submits tokenization request with metadata
-2. **Compliance Check** → KYC verification and regulatory validation
-3. **Token Deployment** → ERC-3643 token creation with compliance rules
-4. **Marketplace Listing** → Asset available for primary investment
-5. **Secondary Trading** → P2P trading with escrow security
-6. **Yield Management** → Choose between distribution or burning
-7. **Portfolio Optimization** → Automated rebalancing and performance tracking
-
----
-
-## Flow EVM Network Integration
-
-orion is natively built on the **Flow EVM Network**, leveraging its high-performance blockchain infrastructure optimized for real-world assets:
-
-### Network Specifications
-- **Chain ID**: 747 (Testnet/Mainnet)
-- **Native Currency**: FLOW Token
-- **Block Time**: ~1-2 seconds
-- **Transaction Finality**: Near-instant
-- **Gas Efficiency**: Ultra-low fees for DeFi operations
-- **EVM Compatibility**: Full Ethereum tooling support
-
-### Smart Contract Deployment
-```typescript
-// Production Contract Addresses (Flow EVM Network)
-ADMIN: "0xFC53E7A6b94173D82d07a127A38d9D852bf478d4", // Flow Admin contract for issuer authorization
-USER_REGISTRY: "0x651458505D6ED8Cc85f76BE9428F56b40aC472B2", // UserRegistry for user management
-TOKEN: "0x7C082010BcF338675508E2FD9d6C0dD2E43b37d8", // ERC1155Core with advanced minting capabilities
-ISSUER: "0xad367F8b04bC9C373aDcE2a1E797A3c4f1aD5D78", // Issuer contract for token creation
-MARKETPLACE: "0xE8DE43BD00370F48db7Ac139146AC27B1AfEd7aF", // Primary marketplace with withdrawal support
-TOKEN_MANAGEMENT: "0xA632A492cCd898De4a4B17DC786B381d099F5815", // Complete workflow with marketplace integration
-
-ORDER_BOOK_ESCROW: "0x0E3b53858E1F086D6ff1a1613e2d0d951237E949", // Fully on-chain escrow order book
-PAYMENT_SPLITTER: "0x6f2db3e628879ee72B455a946C1d6cfBa51aac91", // Advanced payment splitter with yield burning
-
-// ERC-3643 Compliance Infrastructure
-IDENTITY_REGISTRY: "0x1",
-CLAIM_ISSUERS_REGISTRY: "0x2",
-RULE_CONTRACT: "0x3",
-ASSET_REGISTRY: "0x4",
-MASTER_TOKEN: "0x5",
-MULTISIG: "0x6",
-TOKEN_FACTORY: "0x6",
-WATERFALL_CONTRACT: "0x7",
-MERKLE_KYC: "0x8"
-```
-
-### Cross-Chain Architecture
 ```mermaid
 graph LR
-    A[Flow EVM Network] --> B[Asset Registry]
-    A --> C[Compliance Layer]
-    D[Future: Ethereum] --> E[Cross-chain Bridge]
-    F[Future: Polygon] --> E
-    G[Future: Base] --> E
-    E --> A
+    A[Upload Content] --> B[Generate Hash]
+    B --> C[Upload to IPFS]
+    C --> D[Check Similarity]
+    D --> E{Score?}
+    E -->|< 40%| F[Register as Original]
+    E -->|40-70%| G[Show Warning]
+    E -->|70-90%| H[Admin Review]
+    E -->|≥ 90%| I[Force Derivative]
+    F --> J[Attach License Terms]
+    I --> K[Link to Parent]
 ```
+
+**Features:**
+- **SHA256 Hashing** for text content (perceptual hashing for images/video coming soon)
+- **IPFS Storage** via Pinata for decentralized metadata
+- **Database Caching** in PostgreSQL for instant similarity checks
+- **Story Protocol Integration** for on-chain IP registration
 
 ---
 
-## Getting Started
+### **2️⃣ Intelligent Similarity Detection**
 
-### Prerequisites
-- **Node.js**: v18+ 
-- **npm**: v9+
-- **MetaMask**: Browser wallet extension
-- **Git**: Version control
+Our **4-tier similarity scoring system** protects creators while enabling fair derivative creation:
 
-### 🔧 Installation & Setup
+| Score Range | Status | Action | Description |
+|------------|--------|---------|-------------|
+| **0-39%** | ✅ CLEAN | Auto-approve as original | No significant similarity detected |
+| **40-69%** | ⚠️ WARNING | Suggest review to user | Potential similarity, user choice |
+| **70-89%** | 🔍 REVIEW_REQUIRED | Send to admin dispute queue | Gray area requiring human judgment |
+| **90-100%** | 🛑 DERIVATIVE | Force derivative registration | Clear derivative, must link to parent |
 
-1. **Clone Repository**
-```bash
-git clone https://github.com/orion/TOA-Client-VB.git
-cd TOA-Client-VB
-```
-
-2. **Install Dependencies**
-```bash
-# Install frontend dependencies
-npm install
-
-# Install API proxy dependencies
-npm run proxy:install
-```
-
-3. **Environment Configuration**
-```bash
-# Create environment file
-cp .env.example .env.local
-
-# Configure environment variables
-VITE_JWT_SECRET=your_pinata_jwt_token
-VITE_NETWORK=flow_testnet
-VITE_RPC_URL=https://mainnet.evm.nodes.onflow.org/
-```
-
-4. **Development Server**
-```bash
-# Start full development environment
-npm run dev:full
-
-# Or start individually
-npm run dev        # Frontend only
-npm run proxy      # API proxy only
-```
-
-5. **Network Setup**
-```bash
-# Add Flow EVM Network to MetaMask
-Network Name: Flow EVM Testnet
-RPC URL: https://mainnet.evm.nodes.onflow.org/
-Chain ID: 747
-Currency Symbol: FLOW
-Block Explorer: https://www.flowscan.io/
-```
-
-### Demo Workflow
+**Example Flow:**
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant W as Wallet
-    participant P as Platform
-    participant B as Flow EVM
-    
-    U->>W: Connect Wallet
-    W->>P: Authenticate
-    P->>B: Verify KYC Status
-    B-->>P: Compliance Status
-    P->>U: Access Granted
-    U->>P: Browse Assets
-    U->>B: Purchase Tokens
-    B-->>U: Ownership Confirmed
-    U->>P: Manage Yield (Distribute/Burn)
-    U->>P: View Portfolio
+    participant User as Creator
+    participant FE as Frontend
+    participant API as Backend API
+    participant DB as Database
+    participant SP as Story Protocol
+
+    User->>FE: Upload "My Remix Song"
+    FE->>API: POST /api/fingerprint
+    API->>DB: Generate hash & save
+    API-->>FE: { hash, ipfsCid }
+
+    FE->>API: POST /api/check-similarity
+    API->>DB: Query similar hashes
+    API-->>FE: { score: 92%, parent: "Original Song" }
+
+    alt Score ≥ 90%
+        FE->>User: 🛑 Derivative detected! Must link to parent
+        User->>FE: Confirm derivative
+        FE->>SP: registerDerivativeIp()
+        SP-->>FE: { childIpId, txHash }
+        Note over User: Parent gets 10% of future revenue
+    end
 ```
 
 ---
 
-## Usage Instructions
+### **3️⃣ License Marketplace**
 
-### **Investor Journey**
+Unlike traditional platforms where users "buy ownership," IP-OPS uses **Story Protocol's License Tokens**:
 
-#### 1. **Onboarding & KYC**
-- Connect MetaMask wallet to Flow EVM Network
-- Complete KYC verification process
-- Receive compliance verification status
-
-#### 2. **Asset Investment**
-```typescript
-// Example: Purchase Real Estate Token
-const purchaseAsset = async (tokenId: string, amount: number) => {
-  // Compliance check
-  await complianceService.checkUserStatus(userAddress);
-  
-  // Execute purchase
-  const tx = await marketplaceContract.purchaseAsset(tokenId, amount);
-  await tx.wait();
-};
+**Traditional Model:**
+```
+User pays $100 → Owns 10% of IP → Can resell fractions
 ```
 
-#### 3. **🔥 Yield Management (NEW)**
-```typescript
-// Choose between yield distribution or burning
-const manageYield = async (tokenId: string, action: 'distribute' | 'burn') => {
-  if (action === 'burn') {
-    // Burn yield to increase token value
-    const tx = await yieldBurningContract.burnYield(tokenId);
-    await tx.wait();
-  } else {
-    // Distribute yield to wallet
-    const tx = await paymentSplitter.distributeYield(tokenId);
-    await tx.wait();
-  }
-};
+**IP-OPS Model:**
+```
+User pays minting fee → Owns LICENSE to use IP → Cannot resell IP itself
 ```
 
-#### 4. **Portfolio Management**
-- **Real-time Dashboard**: Track asset performance and yields
-- **Yield Strategy**: Choose between income vs. appreciation
-- **Transaction History**: View all investment activities
-- **Performance Analytics**: Advanced metrics and ROI tracking
-
-#### 5. **Secondary Trading**
-- **P2P Marketplace**: Trade assets with other verified investors
-- **Order Book**: Place buy/sell orders with escrow security
-- **Price Discovery**: Real-time market pricing with Flow liquidity
-
-### **Issuer Workflow**
-
-#### 1. **Asset Submission**
-```typescript
-// Asset tokenization request
-const submitAsset = async (assetData: AssetMetadata) => {
-  const metadataURI = await uploadToIPFS(assetData);
-  const tx = await tokenManagement.submitTokenRequest(
-    assetData.name,
-    assetData.symbol,
-    assetData.totalSupply,
-    metadataURI
-  );
-};
-```
-
-#### 2. **Compliance & Approval**
-- Submit asset documentation and legal structure
-- Regulatory review and due diligence process
-- Admin approval and token deployment authorization
-
-#### 3. **Token Deployment & Listing**
-- ERC-3643 compliant token creation
-- Automatic marketplace listing with yield options
-- Investor marketing and distribution
-
-### **Manager Operations**
-
-#### 1. **Enhanced Yield Distribution**
-```typescript
-// Submit rental/dividend income with burning option
-const distributeYield = async (tokenId: string, amount: string, allowBurning: boolean) => {
-  const amountWei = ethers.utils.parseEther(amount);
-  const tx = await paymentSplitter.submitRental(tokenId, allowBurning, {
-    value: amountWei
-  });
-  await tx.wait();
-};
-```
-
-#### 2. **Asset Performance Monitoring**
-- Property management and maintenance tracking
-- Yield optimization analysis
-- Burn vs. distribute recommendations
-- Investor communication and updates
-
----
-
-## Yield Burning Innovation
-
-### **How Yield Burning Works**
+**Benefits:**
+- **Creator Control**: Original creator maintains ownership
+- **Permission-Based**: Clear licensing terms (commercial use, derivatives, royalties)
+- **Automatic Royalties**: 10% flows to parent when derivative earns revenue
+- **Transparent Terms**: All terms on-chain via PIL (Programmable IP License)
 
 ```mermaid
 graph TD
-    A[Property Generates Yield] --> B{Investor Choice}
-    B -->|Distribute| C[Receive FLOW Tokens]
-    B -->|Burn| D[Reduce Token Supply]
-    D --> E[Increase Remaining Token Value]
-    C --> F[Current Income]
-    E --> G[Capital Appreciation]
+    A[Browse Marketplace] --> B[Select IP Asset]
+    B --> C[View License Terms]
+    C --> D{Accept Terms?}
+    D -->|Yes| E[Mint License Token]
+    D -->|No| F[Cancel]
+    E --> G[Pay Minting Fee]
+    G --> H[Receive License NFT]
+    H --> I[Can now use IP commercially]
 ```
-
-### **Economic Model**
-- **Deflationary Mechanism**: Burning reduces circulating supply
-- **Value Appreciation**: Fewer tokens represent same underlying asset value
-- **Investor Flexibility**: Choose income vs. growth strategy
-- **Market Dynamics**: Creates natural price pressure for burned assets
-
-### **Implementation Benefits**
-- **Tax Optimization**: Capital gains vs. income treatment
-- **Portfolio Diversification**: Mix income and growth assets
-- **Market Efficiency**: Reduces sell pressure from yield farmers
-- **Long-term Value**: Builds sustainable asset appreciation
 
 ---
 
-## Token Standards & Compliance
+### **4️⃣ Admin Dispute Resolution**
 
-### ERC-3643 → ERC-7518 Evolution Timeline
+For **70-89% similarity scores**, content enters the dispute queue for admin review:
 
 ```mermaid
-timeline
-    title Token Standard Evolution
-    
-    section Legacy Era
-        ERC-20 : Basic fungible tokens
-        ERC-721 : Non-fungible tokens (NFTs)
-        ERC-1155 : Multi-token standard
-    
-    section Compliance Era  
-        ERC-3643 : Compliant token transfers
-               : Identity & KYC integration
-               : Transfer restrictions
-    
-    section Innovation Era
-        Yield Burning : Deflationary yield mechanics
-                    : Investor choice optimization
-                    : Value appreciation mechanisms
-    
-    section Future Vision
-        ERC-7518 : Enhanced compliance features
-               : Cross-chain compatibility
-               : Advanced governance
+stateDiagram-v2
+    [*] --> Pending: User uploads (70-89% similarity)
+    Pending --> UnderReview: Admin reviews
+    UnderReview --> ApprovedAsOriginal: Sufficiently transformative
+    UnderReview --> EnforcedDerivative: Clear similarity
+    ApprovedAsOriginal --> [*]: Register as independent IP
+    EnforcedDerivative --> [*]: Link to parent + royalty flow
 ```
 
-### Compliance Architecture
+**Admin Capabilities:**
+- **Side-by-Side Comparison**: View original and disputed content
+- **Similarity Metrics**: See detailed hash comparison analysis
+- **Resolution Options**:
+  - **Approve as Original**: Register independently (no parent link)
+  - **Enforce Derivative**: Force derivative registration via backend SDK call
+
+---
+
+### **5️⃣ Automatic Royalty Distribution**
+
+Story Protocol handles all royalty math automatically:
+
+```mermaid
+graph LR
+    A[Derivative Earns $100] --> B[Story Protocol]
+    B --> C[Parent IP: $10]
+    B --> D[Child IP: $90]
+    C --> E[Parent Creator Wallet]
+    D --> F[Child Creator Wallet]
+
+    style B fill:#9f7aea
+    style C fill:#48bb78
+    style D fill:#48bb78
+```
+
+**How It Works:**
+1. User purchases derivative content for $100
+2. Story Protocol calculates split (10% parent, 90% child)
+3. Royalties deposited into IP Royalty Vaults
+4. Creators call `claimRevenue()` to withdraw anytime
+
+---
+
+## 🏗️ Architecture
+
+### System Overview
+
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        A[React + TypeScript]
+        B[WalletContext<br/>MetaMask]
+        C[StoryProtocolService]
+        D[ContentFingerprintService]
+    end
+
+    subgraph "Backend Layer"
+        E[Node.js/Express API]
+        F[PostgreSQL Database]
+        G[Pinata IPFS]
+    end
+
+    subgraph "Blockchain Layer"
+        H[Story Protocol SDK]
+        I[SPG NFT Collection]
+        J[IP Asset Registry]
+        K[License Registry]
+        L[Royalty Module]
+    end
+
+    A --> B
+    A --> C
+    A --> D
+    C --> H
+    D --> E
+    E --> F
+    E --> G
+    H --> I
+    H --> J
+    H --> K
+    H --> L
+
+    style A fill:#61dafb
+    style E fill:#68a063
+    style H fill:#9f7aea
+```
+
+---
+
+### Cache-First Architecture
+
+**Key Innovation**: Frontend calls Story Protocol SDK directly, then sends results to backend for caching.
+
+```mermaid
+sequenceDiagram
+    participant FE as Frontend
+    participant SP as Story Protocol<br/>(Blockchain)
+    participant API as Backend API<br/>(Cache Service)
+    participant DB as PostgreSQL
+
+    Note over FE,DB: IP Registration Flow
+
+    FE->>SP: mintAndRegisterIpAndAttachPILTerms()
+    SP-->>FE: { ipId, tokenId, licenseTermsId }
+
+    FE->>API: POST /api/cache/ip-registration
+    Note right of API: Cache blockchain results
+    API->>DB: UPDATE ip_fingerprints
+
+    Note over FE,DB: Portfolio Query (Cache-First)
+
+    FE->>API: GET /api/assets?walletAddress=0x...
+    API->>DB: Query cached data
+    DB-->>API: Return all user IPs
+    API-->>FE: { ipId, title, royaltyRate, ... }
+
+    Note over FE: Fast! No blockchain call needed
+```
+
+**Benefits:**
+- ⚡ **Instant Queries**: Load portfolio from cache (no blockchain lag)
+- 💰 **Reduced Gas**: Only write to blockchain, read from cache
+- 🔄 **Real-Time Updates**: Backend stores all blockchain events
+- 🎯 **Best of Both**: Speed of centralized + trust of decentralized
+
+---
+
+### Page Structure & Flows
 
 ```mermaid
 graph TD
-    A[User Registration] --> B[Identity Registry]
-    B --> C[KYC Verification]
-    C --> D[Claim Issuers Registry]
-    D --> E[Transfer Rules Engine]
-    E --> F[Compliant Token Transfer]
-    
-    G[Asset Registry] --> H[SPV Verification]
-    H --> I[Legal Structure Validation]
-    I --> J[Token Deployment]
-    J --> K[Yield Management Options]
+    A[Landing Page] --> B{Connect Wallet}
+    B --> C[Creator Dashboard<br/>newIssuerDashboard.tsx]
+    B --> D[User Portfolio<br/>dashboard.tsx]
+    B --> E[Marketplace<br/>marketplace.tsx]
+    B --> F[Admin Panel<br/>admin.tsx]
+
+    C --> C1[Register IP]
+    C --> C2[View My IPs]
+
+    D --> D1[View Assets]
+    D --> D2[Claim Royalties]
+
+    E --> E1[Browse IPs]
+    E --> E2[Mint Licenses]
+
+    F --> F1[Dispute Queue]
+    F --> F2[Resolve Disputes]
+
+    style C fill:#f6ad55
+    style D fill:#4299e1
+    style E fill:#48bb78
+    style F fill:#ed8936
 ```
 
-### Key Compliance Features
+---
 
-#### **Identity & KYC Management**
-- **Identity Registry**: On-chain identity management for all participants
-- **KYC Vendors**: Integrated third-party verification services  
-- **Claim Issuers**: Authorized entities for compliance attestation
-- **Merkle Tree Verification**: Efficient batch KYC processing
+## 🛠️ Technology Stack
 
-#### **Transfer Restrictions**
-```solidity
-// Example: ERC-3643 compliant transfer with yield burning
-function transfer(address to, uint256 amount) public returns (bool) {
-    require(identityRegistry.isRegistered(msg.sender), "Sender not registered");
-    require(identityRegistry.isRegistered(to), "Recipient not registered");
-    require(ruleEngine.validateTransfer(msg.sender, to, amount), "Transfer not allowed");
-    
-    // Update yield burn eligibility
-    yieldManager.updateBurnEligibility(msg.sender, to, amount);
-    
-    return super.transfer(to, amount);
+### **Frontend**
+```json
+{
+  "framework": "React 18.3.1",
+  "language": "TypeScript 5.5.3",
+  "build": "Vite 5.4.1",
+  "styling": "Tailwind CSS + shadcn/ui",
+  "state": "React Context API",
+  "wallet": "ethers.js + MetaMask"
 }
 ```
 
-#### **Regulatory Integration**
-- **Multi-jurisdiction Support**: Configurable compliance rules per region
-- **Automated Reporting**: Transaction monitoring and suspicious activity detection
-- **Legal Framework**: Integration with existing financial regulations
-- **Yield Compliance**: Tax-optimized yield management strategies
+### **Backend**
+```json
+{
+  "runtime": "Node.js 18+",
+  "framework": "Express.js",
+  "database": "PostgreSQL",
+  "storage": "Pinata IPFS",
+  "auth": "JWT tokens"
+}
+```
+
+### **Blockchain**
+```json
+{
+  "protocol": "Story Protocol",
+  "network": "Sepolia Testnet",
+  "chainId": 11155111,
+  "rpc": "https://rpc-sepolia.story.foundation",
+  "explorer": "https://testnet.storyscan.xyz",
+  "sdk": "@story-protocol/core-sdk"
+}
+```
+
+### **Smart Contracts** (Story Protocol Provided)
+```typescript
+// Story Protocol Infrastructure (Sepolia)
+SPG_NFT_CONTRACT: "0x...",       // IP-OPS NFT collection
+IP_ASSET_REGISTRY: "0x...",      // Global IP registry
+LICENSE_REGISTRY: "0x...",       // License token registry
+ROYALTY_MODULE: "0x...",         // Automatic royalty distribution
+PIL_TEMPLATE: "0x...",           // Programmable IP License template
+WIP_TOKEN: "0x...",              // Payment token for licenses
+```
 
 ---
 
-## Impact & Value Proposition
+## 🚀 Getting Started
 
-### **Market Democratization**
-- **$280T+ Real Estate Market**: Previously inaccessible to retail investors
-- **Minimum Investment**: As low as $100 vs. traditional $500K+ requirements
-- **Global Access**: 24/7 trading across international markets
-- **Fractional Ownership**: Own portions of premium assets worldwide
+### Prerequisites
 
-### **Investment Benefits**
+```bash
+# Required
+Node.js >= 18.0.0
+npm >= 9.0.0
+PostgreSQL >= 14.0
+Git
 
-#### For Investors
-- **Flexible Yields**: Choose between 8-12% income or capital appreciation
-- **Yield Burning Advantage**: Unique deflationary mechanism for value growth
-- **Diversification**: Access to multiple asset classes and geographies
-- **Enhanced Liquidity**: Secondary market trading vs. traditional illiquid investments
-- **Transparency**: Blockchain-based performance tracking and verification
+# Optional
+Docker (for containerized deployment)
+```
 
-#### For Issuers  
-- **Capital Access**: Tap into global investor base for asset financing
-- **Yield Flexibility**: Offer investors choice between income and growth
-- **Reduced Costs**: Lower issuance and management fees vs. traditional REITs
-- **Compliance Automation**: Built-in regulatory compliance and reporting
-- **Market Efficiency**: Streamlined investor onboarding and management
+### Installation
 
-### **Ecosystem Benefits**
-- **Market Innovation**: Pioneer yield burning mechanism in RWA space
-- **Financial Inclusion**: Access for underserved investor demographics
-- **Value Creation**: Deflationary tokenomics drive sustainable growth
-- **Regulatory Leadership**: Proactive compliance framework development
+```bash
+# 1️⃣ Clone repository
+git clone https://github.com/your-org/TOA-Client-VB.git
+cd TOA-Client-VB
+
+# 2️⃣ Install frontend dependencies
+npm install
+
+# 3️⃣ Install backend dependencies
+cd backend
+npm install
+cd ..
+
+# 4️⃣ Set up environment variables
+cp .env.example .env.local
+```
+
+### Environment Configuration
+
+**Frontend (.env.local):**
+```bash
+# Story Protocol Network
+VITE_NETWORK=sepolia
+VITE_CHAIN_ID=11155111
+VITE_RPC_URL=https://rpc-sepolia.story.foundation
+VITE_EXPLORER_URL=https://testnet.storyscan.xyz
+
+# Story Protocol Contracts
+VITE_SPG_NFT_CONTRACT=0xYourCollectionAddress
+VITE_WIP_TOKEN=0xWIPTokenAddress
+VITE_PIL_TEMPLATE=0xPILTemplateAddress
+
+# IPFS (Pinata)
+VITE_PINATA_JWT=your_pinata_jwt_token
+VITE_PINATA_GATEWAY=https://gateway.pinata.cloud
+
+# Backend API
+VITE_BACKEND_URL=http://localhost:3001/api
+```
+
+**Backend (.env):**
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/ipops
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=ipops
+DB_USER=your_user
+DB_PASSWORD=your_password
+
+# Authentication
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRATION=7d
+
+# IPFS
+PINATA_JWT=your_pinata_jwt_token
+PINATA_GATEWAY=https://gateway.pinata.cloud
+
+# Story Protocol (Admin Wallet)
+ADMIN_PRIVATE_KEY=0xYourAdminPrivateKey
+STORY_RPC_URL=https://rpc-sepolia.story.foundation
+
+# Server
+PORT=3001
+NODE_ENV=development
+```
+
+### Database Setup
+
+```bash
+# Create PostgreSQL database
+createdb ipops
+
+# Run migrations (if available)
+npm run db:migrate
+
+# Or manually create tables
+psql ipops < backend/schema.sql
+```
+
+**Database Schema:**
+```sql
+-- IP Fingerprints Table
+CREATE TABLE ip_fingerprints (
+  id SERIAL PRIMARY KEY,
+  hash VARCHAR(66) NOT NULL UNIQUE,
+  ipfs_cid VARCHAR(100) NOT NULL,
+  wallet_address VARCHAR(42) NOT NULL,
+  story_ip_id VARCHAR(66),
+  token_id BIGINT,
+  license_terms_id BIGINT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  ip_type VARCHAR(20) DEFAULT 'Text',
+  royalty_rate INTEGER DEFAULT 10,
+  status VARCHAR(30) DEFAULT 'pending',
+  is_derivative BOOLEAN DEFAULT false,
+  parent_ip_id VARCHAR(66),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Similarity Disputes Table
+CREATE TABLE similarity_disputes (
+  id SERIAL PRIMARY KEY,
+  dispute_id VARCHAR(50) UNIQUE NOT NULL,
+  submitted_by VARCHAR(42) NOT NULL,
+  content_hash VARCHAR(66) NOT NULL,
+  content_title VARCHAR(255),
+  ipfs_cid VARCHAR(100),
+  parent_ip_id VARCHAR(66),
+  parent_content_hash VARCHAR(66),
+  similarity_score INTEGER NOT NULL,
+  status VARCHAR(30) DEFAULT 'pending',
+  resolved_by VARCHAR(42),
+  resolution_notes TEXT,
+  resolved_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- License Tokens Table
+CREATE TABLE license_tokens (
+  id SERIAL PRIMARY KEY,
+  license_token_id BIGINT NOT NULL,
+  ip_id VARCHAR(66) NOT NULL,
+  licensee VARCHAR(42) NOT NULL,
+  license_terms_id BIGINT NOT NULL,
+  minted_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Royalty Claims Table
+CREATE TABLE royalty_claims (
+  id SERIAL PRIMARY KEY,
+  ip_id VARCHAR(66) NOT NULL,
+  claimer VARCHAR(42) NOT NULL,
+  amount DECIMAL(30, 0) NOT NULL,
+  currency VARCHAR(42) NOT NULL,
+  tx_hash VARCHAR(66) NOT NULL,
+  claimed_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Running the Application
+
+```bash
+# Terminal 1 - Start backend
+cd backend
+npm run dev
+
+# Terminal 2 - Start frontend
+npm run dev
+
+# Or use concurrently (if configured)
+npm run dev:full
+```
+
+### Network Setup (MetaMask)
+
+```bash
+Network Name: Story Protocol Sepolia
+RPC URL: https://rpc-sepolia.story.foundation
+Chain ID: 11155111
+Currency Symbol: ETH
+Block Explorer: https://testnet.storyscan.xyz
+```
+
+**Get Testnet Funds:**
+1. Visit [Story Faucet](https://faucet.story.foundation)
+2. Enter your wallet address
+3. Receive testnet ETH and WIP tokens
 
 ---
 
-## 📁 Folder Structure
+## 👥 User Journeys
+
+### Complete User Journey (108 Steps)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User
+    participant Frontend
+    participant Backend
+    participant IPFS
+    participant StoryProtocol
+    participant Database
+
+    Note over User,Database: PHASE 1: AUTHENTICATION
+    User->>Frontend: Visit platform & connect wallet
+    Frontend->>Backend: POST /api/auth/check
+    Backend->>Database: Query user
+    Backend-->>Frontend: JWT token
+
+    Note over User,Database: PHASE 2: IP REGISTRATION
+    User->>Frontend: Upload "Original_Song.txt"
+    Frontend->>Backend: POST /api/fingerprint
+    Backend->>IPFS: Upload to Pinata
+    Backend->>Database: Save hash
+    Backend-->>Frontend: { hash, ipfsCid }
+
+    Frontend->>Backend: POST /api/check-similarity
+    Backend->>Database: Query similar hashes
+    Backend-->>Frontend: { score: 0%, status: 'CLEAN' }
+
+    Frontend->>IPFS: Upload metadata JSON
+    IPFS-->>Frontend: metadataURI
+
+    Frontend->>StoryProtocol: mintAndRegisterIpAndAttachPILTerms()
+    StoryProtocol-->>Frontend: { ipId, tokenId, licenseTermsId }
+
+    Frontend->>Backend: POST /api/cache/ip-registration
+    Backend->>Database: UPDATE with Story data
+
+    Note over User: ✅ IP Registered!
+
+    Note over User,Database: PHASE 3: MARKETPLACE
+    User->>Frontend: Browse marketplace
+    Frontend->>Backend: GET /api/marketplace/available-ips
+    Backend->>Database: Query registered IPs
+    Backend-->>Frontend: Available IPs
+
+    User->>Frontend: Click "Mint License"
+    Frontend->>StoryProtocol: mintLicenseTokens()
+    StoryProtocol-->>Frontend: { licenseTokenIds: [101] }
+
+    Frontend->>Backend: POST /api/cache/license-minting
+    Backend->>Database: INSERT license record
+
+    Note over User: ✅ License Minted!
+
+    Note over User,Database: PHASE 4: CLAIM ROYALTIES
+    User->>Frontend: View portfolio
+    Frontend->>Backend: GET /api/assets
+    Backend-->>Frontend: User's IPs
+
+    Frontend->>StoryProtocol: getClaimableRevenue()
+    StoryProtocol-->>Frontend: 0.5 WIP tokens
+
+    User->>Frontend: Click "Claim Royalties"
+    Frontend->>StoryProtocol: claimRevenue()
+    StoryProtocol-->>Frontend: { claimableRevenue, txHash }
+
+    Note over User: 💰 Royalties Claimed!
+```
+
+For the complete 108-step journey with all edge cases, see [COMPLETE_USER_JOURNEY.md](./COMPLETE_USER_JOURNEY.md).
+
+---
+
+## 🔍 Similarity Detection
+
+### How It Works
+
+**Text Content (MVP):**
+```javascript
+// Backend: /api/fingerprint
+const normalizedText = fileContent
+  .toLowerCase()
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const hash = crypto
+  .createHash('sha256')
+  .update(normalizedText)
+  .digest('hex');
+
+// Save to database
+await db.ip_fingerprints.insert({
+  hash,
+  ipfs_cid: ipfsCid,
+  wallet_address: userAddress,
+  title,
+  ip_type: 'Text',
+  status: 'pending'
+});
+```
+
+**Similarity Check:**
+```javascript
+// Backend: /api/check-similarity
+const matches = await db.ip_fingerprints.find({
+  hash: contentHash
+});
+
+if (matches.length === 0) {
+  return { score: 0, status: 'CLEAN' };
+}
+
+// For exact match (Text MVP)
+if (matches[0].hash === contentHash) {
+  return {
+    score: 100,
+    status: 'DERIVATIVE',
+    isMatch: true,
+    parentIpId: matches[0].story_ip_id,
+    parentMetadata: { ... }
+  };
+}
+
+// Future: Fuzzy matching with Levenshtein distance
+const similarityScore = calculateLevenshtein(contentHash, matches[0].hash);
+```
+
+### Branching Logic
+
+```mermaid
+graph TD
+    A[Upload Content] --> B[Generate Hash]
+    B --> C{Similarity Score?}
+
+    C -->|0-39%| D[✅ CLEAN]
+    C -->|40-69%| E[⚠️ WARNING]
+    C -->|70-89%| F[🔍 REVIEW_REQUIRED]
+    C -->|90-100%| G[🛑 DERIVATIVE]
+
+    D --> H[Register as Original]
+    E --> I{User Choice}
+    I -->|Proceed| H
+    I -->|Cancel| J[Upload Cancelled]
+
+    F --> K[Create Dispute]
+    K --> L[Admin Review]
+
+    G --> M[Force Derivative Link]
+
+    H --> N[Attach License Terms]
+    M --> O[Link to Parent + Royalty Flow]
+
+    style D fill:#48bb78
+    style E fill:#ed8936
+    style F fill:#ecc94b
+    style G fill:#f56565
+```
+
+---
+
+## 📡 Story Protocol Integration
+
+### SDK Functions Used
+
+**1. Combined IP Registration (Recommended)**
+
+```typescript
+// One transaction: Mint NFT + Register IP + Attach License
+const result = await client.ipAsset.mintAndRegisterIpAndAttachPILTerms({
+  spgNftContract: SPG_NFT_CONTRACT,
+  pilType: 'commercialRemix',
+  ipMetadata: {
+    ipMetadataURI: 'ipfs://Qm...',
+    ipMetadataHash: '0x...',
+    nftMetadataURI: 'ipfs://Qm...',
+    nftMetadataHash: '0x...'
+  },
+  commercialRevShare: 1000,  // 10% royalty (basis points)
+  currency: WIP_TOKEN_ADDRESS,
+  mintingFee: 0,  // Free minting
+  txOptions: { waitForTransaction: true }
+});
+
+// Returns:
+// {
+//   ipId: '0xIP_A...',      // Global IP identifier
+//   tokenId: 1n,            // NFT token ID
+//   licenseTermsId: 55n,    // License terms ID
+//   txHash: '0xTX_A...'
+// }
+```
+
+**2. Derivative Registration**
+
+```typescript
+// Register derivative and link to parent
+const result = await client.ipAsset.registerDerivativeIp({
+  nftContract: SPG_NFT_CONTRACT,
+  tokenId: 2n,
+  derivData: {
+    parentIpIds: ['0xIP_A...'],
+    licenseTermsIds: [55n],
+    licenseTemplate: PIL_TEMPLATE_ADDRESS,
+    royaltyContext: '0x'  // Empty bytes
+  },
+  ipMetadata: {
+    ipMetadataURI: 'ipfs://Qm...',
+    ipMetadataHash: '0x...',
+    nftMetadataURI: 'ipfs://Qm...',
+    nftMetadataHash: '0x...'
+  },
+  txOptions: { waitForTransaction: true }
+});
+
+// Returns:
+// {
+//   ipId: '0xIP_B...',      // Child IP ID
+//   txHash: '0xTX_B...'
+// }
+
+// Automatic royalty setup:
+// - Parent (0xIP_A): 10% of revenue
+// - Child (0xIP_B): 90% of revenue
+```
+
+**3. License Minting**
+
+```typescript
+// Mint license token (user gets permission to use IP)
+const result = await client.license.mintLicenseTokens({
+  licensorIpId: '0xIP_A...',
+  licenseTemplate: PIL_TEMPLATE_ADDRESS,
+  licenseTermsId: 55n,
+  amount: 1,
+  receiver: userAddress,
+  royaltyContext: '0x',
+  maxMintingFee: 0,
+  maxRevenueShare: 100,
+  txOptions: { waitForTransaction: true }
+});
+
+// Returns:
+// {
+//   licenseTokenIds: [101n, 102n, 103n],
+//   txHash: '0xTX_C...'
+// }
+```
+
+**4. Royalty Claims**
+
+```typescript
+// Claim accumulated revenue
+const result = await client.royalty.claimRevenue({
+  snapshotIds: [1n, 2n, 3n],
+  account: userAddress,
+  token: WIP_TOKEN_ADDRESS,
+  txOptions: { waitForTransaction: true }
+});
+
+// Returns:
+// {
+//   claimableRevenue: 500000000000000000n,  // 0.5 WIP in wei
+//   txHash: '0xTX_D...'
+// }
+```
+
+---
+
+## 📚 API Documentation
+
+### Backend Endpoints
+
+#### **Content Fingerprinting**
+
+```http
+POST /api/fingerprint
+Content-Type: multipart/form-data
+
+FormData:
+- file: File (content file)
+- title: string
+- walletAddress: string (0x...)
+- ipType: 'Text' | 'Image' | 'Video' | 'Audio'
+
+Response:
+{
+  "success": true,
+  "data": {
+    "hash": "0xabc123...",
+    "ipfsCid": "QmXxx...",
+    "fileSize": 1024,
+    "mimeType": "text/plain",
+    "uploadedAt": "2025-12-12T10:00:00Z"
+  }
+}
+```
+
+#### **Similarity Detection**
+
+```http
+POST /api/check-similarity
+Content-Type: application/json
+
+{
+  "contentHash": "0xabc123..."
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "score": 92,
+    "status": "DERIVATIVE",
+    "isMatch": true,
+    "isPotentialMatch": false,
+    "needsReview": false,
+    "parentIpId": "0xIP_A...",
+    "parentMetadata": {
+      "title": "Original Song",
+      "creator": "0x789...",
+      "contentHash": "0x456def...",
+      "ipfsCid": "QmYyy...",
+      "licenseTermsId": "55"
+    }
+  }
+}
+```
+
+#### **Asset Management**
+
+```http
+GET /api/assets?walletAddress=0x...
+
+Response:
+{
+  "success": true,
+  "data": [
+    {
+      "hash": "0xabc123...",
+      "ipfsCid": "QmXxx...",
+      "storyIpId": "0xIP_A...",
+      "tokenId": "1",
+      "title": "My Original Song",
+      "ipType": "Text",
+      "royaltyRate": 10,
+      "licenseTermsId": "55",
+      "status": "registered",
+      "createdAt": "2025-12-12T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### **Dispute Management**
+
+```http
+POST /api/disputes/create
+Content-Type: application/json
+
+{
+  "submittedBy": "0x456...",
+  "contentHash": "0xdef...",
+  "contentTitle": "My Remix Song",
+  "ipfsCid": "QmZzz...",
+  "parentIpId": "0xIP_A...",
+  "parentContentHash": "0xabc...",
+  "similarityScore": 78
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "disputeId": "dispute_123",
+    "status": "pending",
+    "createdAt": "2025-12-12T10:00:00Z"
+  }
+}
+```
+
+```http
+GET /api/disputes/pending
+
+Response:
+{
+  "success": true,
+  "data": [
+    {
+      "disputeId": "dispute_123",
+      "submittedBy": "0x456...",
+      "contentHash": "0xdef...",
+      "contentTitle": "My Remix Song",
+      "ipfsCid": "QmZzz...",
+      "parentIpId": "0xIP_A...",
+      "parentMetadata": {
+        "title": "Original Song",
+        "creator": "0x789..."
+      },
+      "similarityScore": 78,
+      "status": "pending",
+      "createdAt": "2025-12-12T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### **Cache Endpoints**
+
+```http
+POST /api/cache/ip-registration
+Content-Type: application/json
+
+{
+  "contentHash": "0xabc123...",
+  "ipfsCid": "QmXxx...",
+  "walletAddress": "0x123...",
+  "storyIpId": "0xIP_A...",
+  "tokenId": "1",
+  "licenseTermsId": "55",
+  "txHash": "0xTX_A...",
+  "title": "My Original Song",
+  "ipType": "Text",
+  "commercialRevShare": 1000,
+  "metadata": {
+    "ipMetadataURI": "ipfs://QmXxx...",
+    "ipMetadataHash": "0xMETA..."
+  }
+}
+
+Response:
+{
+  "success": true,
+  "message": "IP registration cached successfully",
+  "data": {
+    "hash": "0xabc123...",
+    "storyIpId": "0xIP_A...",
+    "status": "registered"
+  }
+}
+```
+
+For complete API documentation with all endpoints, see [FLOW.md](./FLOW.md).
+
+---
+
+## 💻 Development
+
+### Project Structure
 
 ```
 TOA-Client-VB/
-├── Frontend Application
+├── Frontend
 │   ├── src/
-│   │   ├── components/          # Reusable UI components
-│   │   │   ├── ui/             # Base UI library (shadcn/ui)
-│   │   │   ├── marketplace/    # Marketplace-specific components
-│   │   │   ├── admin/          # Admin dashboard components
-│   │   │   └── issuer/         # Issuer workflow components
-│   │   ├── pages/              # Route-based page components
-│   │   │   ├── dashboard/      # Investor dashboard with yield management
-│   │   │   ├── marketplace/    # Asset marketplace
-│   │   │   ├── orderbook/      # Advanced trading interface
-│   │   │   └── admin/          # Administrative interface
-│   │   ├── services/           # Business logic & blockchain integration
-│   │   │   ├── metadataService.ts     # IPFS metadata management
-│   │   │   ├── tradingService.ts      # P2P trading operations
-│   │   │   ├── complianceService.ts   # KYC/AML verification
-│   │   │   ├── yieldService.ts        # Yield burning management
-│   │   │   └── adminService.js        # Admin operations
-│   │   ├── utils/              # Smart contract ABIs & utilities
-│   │   │   ├── *ABI.ts         # Contract application binary interfaces
-│   │   │   ├── networkDetection.ts   # Flow EVM network switching
-│   │   │   ├── priceService.ts       # FLOW/USD price feeds
-│   │   │   └── yieldBurningABI.ts    # Yield burning contract interface
-│   │   ├── context/            # React context providers
-│   │   │   ├── WalletContext.tsx     # Wallet connection management
-│   │   │   └── AuthContext.tsx       # User authentication
-│   │   └── config/             # Configuration & contract addresses
-│   │       ├── contractConfig.ts     # Environment-based config
-│   │       └── flowEVM-contracts.ts  # Production addresses
-├── Development Tools
-│   ├── api/                    # Proxy server for CORS handling
-│   ├── public/                 # Static assets
-│   └── *.config.*              # Build & development configuration
+│   │   ├── components/          # UI components
+│   │   │   ├── ui/              # shadcn/ui base components
+│   │   │   ├── admin/           # Admin-specific components
+│   │   │   └── marketplace/     # Marketplace components
+│   │   ├── pages/               # Route pages
+│   │   │   ├── Issuer/          # Creator dashboard
+│   │   │   │   └── newIssuerDashboard.tsx
+│   │   │   ├── dashboard/       # User portfolio
+│   │   │   │   └── dashboard.tsx
+│   │   │   ├── marketplace/     # License marketplace
+│   │   │   │   └── marketplace.tsx
+│   │   │   └── admin/           # Admin panel
+│   │   │       └── admin.tsx
+│   │   ├── services/            # Business logic
+│   │   │   ├── storyProtocolService.ts
+│   │   │   ├── contentFingerprintService.ts
+│   │   │   └── disputeResolutionService.ts
+│   │   ├── context/             # React context
+│   │   │   ├── WalletContext.tsx
+│   │   │   └── AuthContext.tsx
+│   │   ├── lib/                 # Utilities & config
+│   │   │   └── storyProtocolConfig.ts
+│   │   └── types/               # TypeScript types
+│   │       └── ipAsset.ts
+│   └── public/                  # Static assets
+│
+├── Backend
+│   ├── src/
+│   │   ├── routes/              # API routes
+│   │   │   ├── fingerprint.ts
+│   │   │   ├── similarity.ts
+│   │   │   ├── disputes.ts
+│   │   │   └── cache.ts
+│   │   ├── services/            # Business logic
+│   │   │   ├── ipfsService.ts
+│   │   │   ├── hashingService.ts
+│   │   │   └── storyService.ts
+│   │   ├── db/                  # Database
+│   │   │   ├── schema.sql
+│   │   │   └── migrations/
+│   │   └── utils/               # Utilities
+│   └── index.ts                 # Server entry
+│
 └── Documentation
-    ├── README.md               # This comprehensive guide
-    ├── YIELD_BURNING.md        # Yield burning mechanism guide
-    └── package.json            # Dependencies & scripts
+    ├── README.md                # This file
+    ├── FLOW.md                  # Detailed flow diagrams
+    ├── COMPLETE_USER_JOURNEY.md # 108-step user journey
+    └── STORY_INTEGRATION_GUIDE.md # Story Protocol integration
 ```
 
----
+### Development Scripts
 
-## Contributing
-
-### Development Workflow
 ```bash
-# 1. Fork & clone repository
-git clone https://github.com/orion/TOA-Client-VB.git
+# Frontend
+npm run dev              # Start Vite dev server
+npm run build            # Production build
+npm run preview          # Preview production build
+npm run lint             # ESLint check
+npm run type-check       # TypeScript check
+
+# Backend
+npm run dev              # Start backend dev server
+npm run build            # Compile TypeScript
+npm run start            # Start production server
+npm run db:migrate       # Run database migrations
+
+# Full Stack
+npm run dev:full         # Start both frontend & backend
+npm run test:full        # Run all tests
+```
+
+### Contributing
+
+```bash
+# 1. Fork & clone
+git clone https://github.com/your-org/TOA-Client-VB.git
 
 # 2. Create feature branch
-git checkout -b feature/your-feature-name
+git checkout -b feature/amazing-feature
 
-# 3. Install dependencies & start development
-npm install && npm run dev:full
+# 3. Make changes & test
+npm run dev:full
+npm run lint
+npm run type-check
 
-# 4. Make changes & test thoroughly
-npm run build && npm run preview
+# 4. Commit with conventional commits
+git commit -m "feat: add amazing feature"
 
-# 5. Submit pull request
-git push origin feature/your-feature-name
+# 5. Push & create PR
+git push origin feature/amazing-feature
 ```
 
-### Code Standards
-- **TypeScript**: Strict type checking enabled
-- **ESLint**: Airbnb configuration with React hooks
-- **Prettier**: Automated code formatting
-- **Conventional Commits**: Semantic commit messages
-
-### Testing Guidelines
-- **Component Testing**: React Testing Library
-- **Smart Contract Testing**: Hardhat + Chai
-- **E2E Testing**: Playwright for user workflows
-- **Security Audits**: Regular smart contract audits
+**Commit Convention:**
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `style:` Code style changes (formatting)
+- `refactor:` Code refactoring
+- `test:` Test additions/changes
+- `chore:` Build/config changes
 
 ---
 
-## References & Links
+## 📄 License
 
-### **Live Platform**
-- **Flow EVM Testnet**: [TOA Demo Platform](https://toa-demo.flow.com) *(Coming Soon)*
+This project is licensed under the **MIT License**.
 
-### **Technical Documentation**
-- **Flow EVM Network**: [https://developers.flow.com/evm](https://developers.flow.com/evm)
-- **ERC-3643 Standard**: [https://eips.ethereum.org/EIPS/eip-3643](https://eips.ethereum.org/EIPS/eip-3643)
-- **Contract Verification**: [https://www.flowscan.io](https://www.flowscan.io)
+```
+MIT License
 
-### **Blockchain Explorers**
-- **Flow EVM Testnet**: [https://www.flowscan.io](https://www.flowscan.io)
-- **Contract Source Code**: Verified on FlowScan Explorer
+Copyright (c) 2025 IP-OPS Team
 
-### **Community & Support**
-- **GitHub Issues**: Bug reports and feature requests
-- **Discord Community**: Real-time developer support *(Coming Soon)*
-- **Documentation Wiki**: Comprehensive guides and tutorials *(Coming Soon)*
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-### **Achievements & Recognition**
-- **Flow Network**: Official ecosystem partner
-- **ERC-3643**: Reference implementation with yield innovations
-- **Open Source**: MIT License for community contribution
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## 🔗 Resources
+
+### **Official Links**
+- 🌐 **Live Demo**: [Watch Demo](https://youtu.be/Z01S9XWOOAA)
+- 📖 **Documentation**: [Full Documentation](./FLOW.md)
+- 🎯 **User Journey**: [Complete User Journey](./COMPLETE_USER_JOURNEY.md)
+- 🔧 **Integration Guide**: [Story Protocol Integration](./STORY_INTEGRATION_GUIDE.md)
+
+### **Story Protocol Resources**
+- 📚 **Official Docs**: [docs.story.foundation](https://docs.story.foundation)
+- 🛠️ **TypeScript SDK**: [SDK Documentation](https://docs.story.foundation/developers/typescript-sdk/setup)
+- 🔍 **Block Explorer**: [testnet.storyscan.xyz](https://testnet.storyscan.xyz)
+- 💧 **Faucet**: [faucet.story.foundation](https://faucet.story.foundation)
+
+### **Technical References**
+- 🔗 **GitHub**: [Story Protocol SDK](https://github.com/storyprotocol/story-protocol-sdk)
+- 📦 **NPM Package**: [@story-protocol/core-sdk](https://www.npmjs.com/package/@story-protocol/core-sdk)
+- 🌐 **RPC Endpoint**: `https://rpc-sepolia.story.foundation`
+- ⛓️ **Chain ID**: `11155111` (Sepolia)
+
+---
+
+## 🙏 Acknowledgments
+
+- **Story Protocol Team** - For building the infrastructure for programmable IP
+- **Pinata** - For reliable IPFS storage
+- **shadcn/ui** - For beautiful UI components
+- **Vite** - For lightning-fast development experience
+- **PostgreSQL** - For robust data storage
 
 ---
 
 <div align="center">
 
-### **Ready to Revolutionize RWA Investment?**
+### **Ready to revolutionize IP management?**
 
-**Join the yield burning revolution and democratize access to premium real-world assets**
+**Protect your creations. Earn from derivatives. Build the future of IP.**
 
-[![Get Started](https://img.shields.io/badge/Get%20Started-Live%20Demo-blue?style=for-the-badge&logo=rocket)](https://flow.com)
-[![Documentation](https://img.shields.io/badge/Read%20Docs-Developer%20Guide-green?style=for-the-badge&logo=book)](https://developers.flow.com)
+[![Get Started](https://img.shields.io/badge/Get%20Started-Watch%20Demo-purple?style=for-the-badge&logo=youtube)](https://youtu.be/Z01S9XWOOAA)
+[![Documentation](https://img.shields.io/badge/Read%20Docs-Full%20Guide-blue?style=for-the-badge&logo=book)](./FLOW.md)
 
 ---
 
-**Built with ❤️ by orion Team | Powered by Flow EVM Network**
+**Built with 💜 by the IP-OPS Team | Powered by Story Protocol**
 
-*© 2025 orion. Licensed under MIT License.*
+*© 2025 IP-OPS. Licensed under MIT License.*
 
 </div>
